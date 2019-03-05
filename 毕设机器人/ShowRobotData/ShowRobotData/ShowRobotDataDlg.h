@@ -82,10 +82,12 @@ public:
 private: CEdit* send_edit;
 
 public:
+	bool fileopenflag;
 	CEdit m_TCPPort;
 	CIPAddressCtrl m_TCPIPaddr;
 	void DrawData(RobotData myrobotdata);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnClose();
 };
 
 

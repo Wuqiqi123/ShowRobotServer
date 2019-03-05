@@ -7,6 +7,9 @@
 #include "ShowRobotDataDlg.h"
 #include "afxdialogex.h"
 #include <queue>
+#include <fstream>
+
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -80,6 +83,7 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_LBN_SELCHANGE(IDC_LIST1_SHOWMESSAGE, &CShowRobotDataDlg::OnLbnSelchangeList1Showmessage)
 	ON_MESSAGE(UM_DRAWROBOTDATA, &CShowRobotDataDlg::OnDrawRobotData)
 	ON_WM_TIMER()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -188,6 +192,9 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
 
+
+	fileopenflag = false;
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -254,9 +261,18 @@ void CString2Char(CString str, char ch[])//此函数就是字符转换函数的实现代码
 	ch[i] = '\0';
 }
 
+std::ofstream oFile;
 void CShowRobotDataDlg::OnBnClickedStartserver()
 {
-	// TODO:  在此添加控件通知处理程序代码
+	//在函数之前添加保存Excel的文件   
+	oFile.open("Robotdata.csv",std::ios::out|std::ios::trunc);  //输出模式，如果文件已经存在就删除这个文件
+	oFile << "现在的角度[0]" << "," << "现在的速度[0]" << "," << "现在的力矩[0]" << "," << "下个时刻的角度[0]" << "," << "下个时刻的速度[0]" << ",";
+	oFile << "现在的角度[1]" << "," << "现在的速度[1]" << "," << "现在的力矩[1]" << "," << "下个时刻的角度[1]" << "," << "下个时刻的速度[1]" << ",";
+	oFile << "现在的角度[2]" << "," << "现在的速度[2]" << "," << "现在的力矩[2]" << "," << "下个时刻的角度[2]" << "," << "下个时刻的速度[2]" << ",";
+	oFile << "现在的角度[3]" << "," << "现在的速度[3]" << "," << "现在的力矩[3]" << "," << "下个时刻的角度[3]" << "," << "下个时刻的速度[3]";
+	oFile << std::endl;
+	fileopenflag = true;
+ 	// TODO:  在此添加控件通知处理程序代码
 	WSADATA wsaData;
 	int err = WSAStartup(MAKEWORD(2, 2), &wsaData);   //加载套接字库2.0版本
 	if (err!=0)
@@ -512,11 +528,31 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			memset(&MyRobotData, 0, sizeof(MyRobotData));
 			memcpy(&MyRobotData, recbuf, sizeof(MyRobotData));
 
-			////****使用队列的方式来完成任务			
+			//////保存这个文件为excel
+			oFile.precision(6); //设置精度
+			//发现传输过程中有一些坏点，将这些观点剔除掉
+			if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
+			{
+				oFile << MyRobotData.JointsNow[0] << "," << MyRobotData.JointsVelNow[0] << "," << MyRobotData.JointsTorque[0] << "," << MyRobotData.JointsNext[0] << "," << MyRobotData.JointsVelNext[0] << ",";
+				oFile << MyRobotData.JointsNow[1] << "," << MyRobotData.JointsVelNow[1] << "," << MyRobotData.JointsTorque[1] << "," << MyRobotData.JointsNext[1] << "," << MyRobotData.JointsVelNext[1] << ",";
+				oFile << MyRobotData.JointsNow[2] << "," << MyRobotData.JointsVelNow[2] << "," << MyRobotData.JointsTorque[2] << "," << MyRobotData.JointsNext[2] << "," << MyRobotData.JointsVelNext[2] << ",";
+				oFile << MyRobotData.JointsNow[3] << "," << MyRobotData.JointsVelNow[3] << "," << MyRobotData.JointsTorque[3] << "," << MyRobotData.JointsNext[3] << "," << MyRobotData.JointsVelNext[3];
+				oFile << std::endl;
+			}
+
+			//////保存这个文件为excel结束
+
+			//****使用队列的方式来完成任务			
 			WaitForSingleObject(g_hMutex, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
-			g_QueueData.push(MyRobotData);
+			if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
+			{
+				g_QueueData.push(MyRobotData);
+			}
 			ReleaseMutex(g_hMutex);
-			////****使用队列的方式来完成任务结束
+			//****使用队列的方式来完成任务结束
+
+
+
 
 			////******使用发送消息的方式来完成任务
 			//::PostMessageA(hWnd,UM_DRAWROBOTDATA,(WPARAM)&MyRobotData,1);
@@ -697,4 +733,15 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 
 
 	CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void CShowRobotDataDlg::OnClose()
+{
+	// TODO:  在此添加消息处理程序代码和/或调用默认值
+	if (fileopenflag)
+	{
+		oFile.close();
+	}
+	CDialogEx::OnClose();
 }

@@ -323,6 +323,7 @@ bool CImpedance::GetNextStateUsingJointSpaceImpendence(void)
 bool CImpedance::GetNextStateUsingJointSpaceImpendenceWithSpeedWithTProfile(void)
 {
 	double Torque[3] = { 10, 10, 10 };   //仅仅是测试用，获得每个关节的力矩，只使用前三个关节的参数
+
 	for (int i = 0; i < 3; i++)
 	{
 		m_angularVelImpedPara[i].Next = (Torque[i] - m_K*m_thetaImpedPara[i].Now) / (m_K*T + m_B);

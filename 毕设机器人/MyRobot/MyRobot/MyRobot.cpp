@@ -27,6 +27,7 @@ CMyRobotApp::CMyRobotApp()
 
 	// TODO:  在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+	SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);    //更改当前程序的优先级为高于标准
 }
 
 
