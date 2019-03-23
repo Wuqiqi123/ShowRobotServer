@@ -59,6 +59,11 @@ END_MESSAGE_MAP()
 CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CShowRobotDataDlg::IDD, pParent)
 {
+	for (int i = 0; i < 6; i++)
+	{
+		bIsMouseDown[i] = false;
+		ForceSense[i] = 0;
+	}
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -724,8 +729,14 @@ void CShowRobotDataDlg::OnClose()
 
 
 /*键盘力函数
-1----2----3----4----5----6
+正向力
+q----w----e----r----t----y
 Fx---Fy---Fz---Mx---My---Mz
+
+反向力
+z----x----c----v----b----n
+Fx---Fy---Fz---Mx---My---Mz
+
 */ 
 BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 {
@@ -734,14 +745,27 @@ BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 	{
 		switch (pMsg->wParam)
 		{
-		case'1':MessageBox(_T("key 1 is be pressed")); break;
-		case'2':MessageBox(_T("key 2 is be pressed")); break;
-		case'3':MessageBox(_T("key 3 is be pressed")); break;
-		case'4':MessageBox(_T("key 4 is be pressed")); break;
-		case'5':MessageBox(_T("key 5 is be pressed")); break;
-		case'6':MessageBox(_T("key 6 is be pressed")); break;
+		case'Q': ShowForce(1); break;
+		case'W': ShowForce(2); break;
+		case'E': ShowForce(3); break;
+		case'R': ShowForce(4); break;
+		case'T': ShowForce(5); break;
+		case'Y': ShowForce(6); break;
+		case'Z': ShowForce(-1); break;
+		case'X': ShowForce(-2); break;
+		case'C': ShowForce(-3); break;
+		case'V': ShowForce(-4); break;
+		case'B': ShowForce(-5); break;
+		case'N': ShowForce(-6); break;
 		default:break;
 		}
 	}
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+void CShowRobotDataDlg::ShowForce(int i)
+{
+	CString str;
+	str.Format(_T("%.4f"),ForceSense[i]++);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
+	SetDlgItemText(IDC_STATIC_FX, str);
 }
