@@ -704,6 +704,9 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	m_pLineSerie3[0]->ClearSerie();
 	m_pLineSerie3[1]->ClearSerie();
 	m_pLineSerie3[2]->ClearSerie();
+	m_pLineSerie4[0]->ClearSerie();
+	m_pLineSerie4[1]->ClearSerie();
+	m_pLineSerie4[2]->ClearSerie();
 
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[0], m_c_arrayLength, DealQueueData, DataSize,11);  //角度值
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[1], m_c_arrayLength, DealQueueData, DataSize,12);  //速度值
@@ -716,6 +719,10 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
+
+	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
+	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
+	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
 
 	LeftMoveArrayXWithQueue(m_X, m_c_arrayLength, m_count, DataSize);
 
@@ -730,6 +737,10 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	m_pLineSerie3[0]->AddPoints(m_X, m_HightSpeedChartArray3[0], m_c_arrayLength);
 	m_pLineSerie3[1]->AddPoints(m_X, m_HightSpeedChartArray3[1], m_c_arrayLength);
 	m_pLineSerie3[2]->AddPoints(m_X, m_HightSpeedChartArray3[2], m_c_arrayLength);
+
+	m_pLineSerie4[0]->AddPoints(m_X, m_HightSpeedChartArray4[0], m_c_arrayLength);
+	m_pLineSerie4[1]->AddPoints(m_X, m_HightSpeedChartArray4[1], m_c_arrayLength);
+	m_pLineSerie4[2]->AddPoints(m_X, m_HightSpeedChartArray4[2], m_c_arrayLength);
 
 
 	CDialogEx::OnTimer(nIDEvent);
