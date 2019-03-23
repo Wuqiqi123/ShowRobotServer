@@ -551,9 +551,6 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			ReleaseMutex(g_hMutex);
 			//****使用队列的方式来完成任务结束
 
-
-
-
 			////******使用发送消息的方式来完成任务
 			//::PostMessageA(hWnd,UM_DRAWROBOTDATA,(WPARAM)&MyRobotData,1);
 			////******使用发送消息的方式来完成任务结束
@@ -565,6 +562,7 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 	return 0;
 }
 
+//没有使用这个函数
 LRESULT CShowRobotDataDlg::OnDrawRobotData(WPARAM wParam, LPARAM lParam)
 {
 	RobotData *myRobotData;
@@ -588,19 +586,19 @@ LRESULT CShowRobotDataDlg::OnDrawRobotData(WPARAM wParam, LPARAM lParam)
 
 	LeftMoveArray(m_HightSpeedChartArray1[0], m_c_arrayLength, myRobotData->JointsNow[0]);  //角度值
 	LeftMoveArray(m_HightSpeedChartArray1[1], m_c_arrayLength, myRobotData->JointsVelNow[0]);  //速度值
-	LeftMoveArray(m_HightSpeedChartArray1[2], m_c_arrayLength, myRobotData->JointsNow[0]);  //力矩
+	LeftMoveArray(m_HightSpeedChartArray1[2], m_c_arrayLength, myRobotData->JointsTorque[0]);  //力矩
 
 	LeftMoveArray(m_HightSpeedChartArray2[0], m_c_arrayLength, myRobotData->JointsNow[1]);  //角度值
 	LeftMoveArray(m_HightSpeedChartArray2[1], m_c_arrayLength, myRobotData->JointsVelNow[1]);  //速度值
-	LeftMoveArray(m_HightSpeedChartArray2[2], m_c_arrayLength, myRobotData->JointsNow[1]);  //力矩
+	LeftMoveArray(m_HightSpeedChartArray2[2], m_c_arrayLength, myRobotData->JointsTorque[1]);  //力矩
 
 	LeftMoveArray(m_HightSpeedChartArray3[0], m_c_arrayLength, myRobotData->JointsNow[2]);  //角度值
 	LeftMoveArray(m_HightSpeedChartArray3[1], m_c_arrayLength, myRobotData->JointsVelNow[2]);  //速度值
-	LeftMoveArray(m_HightSpeedChartArray3[2], m_c_arrayLength, myRobotData->JointsNow[2]);  //力矩
+	LeftMoveArray(m_HightSpeedChartArray3[2], m_c_arrayLength, myRobotData->JointsTorque[2]);  //力矩
 
 	LeftMoveArray(m_HightSpeedChartArray4[0], m_c_arrayLength, myRobotData->JointsNow[3]);  //角度值
 	LeftMoveArray(m_HightSpeedChartArray4[1], m_c_arrayLength, myRobotData->JointsVelNow[3]);  //速度值
-	LeftMoveArray(m_HightSpeedChartArray4[2], m_c_arrayLength, myRobotData->JointsNow[3]);  //力矩
+	LeftMoveArray(m_HightSpeedChartArray4[2], m_c_arrayLength, myRobotData->JointsTorque[3]);  //力矩
 
 	LeftMoveArray(m_X, m_c_arrayLength, m_count);
 
@@ -623,23 +621,18 @@ LRESULT CShowRobotDataDlg::OnDrawRobotData(WPARAM wParam, LPARAM lParam)
 	return 1;
 }
 
+/*没有使用这个函数*/
 void CShowRobotDataDlg::DrawData(RobotData myrobotdata)
 {
 	++m_count;
-	//for (int i = 0; i < 3; i++)
-	//{
-	//	m_pLineSerie1[i]->ClearSerie();
-	//	m_pLineSerie2[i]->ClearSerie();
-	//	m_pLineSerie3[i]->ClearSerie();
-	//	m_pLineSerie4[i]->ClearSerie();
-	//}
+
 	m_pLineSerie1[0]->ClearSerie();
 	m_pLineSerie1[1]->ClearSerie();
 	m_pLineSerie1[2]->ClearSerie();
 
 	LeftMoveArray(m_HightSpeedChartArray1[0], m_c_arrayLength, myrobotdata.JointsNow[0]);  //角度值
 	LeftMoveArray(m_HightSpeedChartArray1[1], m_c_arrayLength, myrobotdata.JointsVelNow[0]);  //速度值
-	LeftMoveArray(m_HightSpeedChartArray1[2], m_c_arrayLength, myrobotdata.JointsNow[0]);  //力矩
+	LeftMoveArray(m_HightSpeedChartArray1[2], m_c_arrayLength, myrobotdata.JointsTorque[0]);  //力矩
 
 	LeftMoveArray(m_X, m_c_arrayLength, m_count);
 
@@ -647,39 +640,16 @@ void CShowRobotDataDlg::DrawData(RobotData myrobotdata)
 	m_pLineSerie1[1]->AddPoints(m_X, m_HightSpeedChartArray1[1], m_c_arrayLength);
 	m_pLineSerie1[2]->AddPoints(m_X, m_HightSpeedChartArray1[2], m_c_arrayLength);
 
-	//LeftMoveArray(m_HightSpeedChartArray2[0], m_c_arrayLength, myrobotdata.JointsNow[1]);  //角度值
-	//LeftMoveArray(m_HightSpeedChartArray2[1], m_c_arrayLength, myrobotdata.JointsVelNow[1]);  //速度值
-	//LeftMoveArray(m_HightSpeedChartArray2[2], m_c_arrayLength, myrobotdata.JointsNow[1]);  //力矩
-
-	//LeftMoveArray(m_HightSpeedChartArray3[0], m_c_arrayLength, myrobotdata.JointsNow[2]);  //角度值
-	//LeftMoveArray(m_HightSpeedChartArray3[1], m_c_arrayLength, myrobotdata.JointsVelNow[2]);  //速度值
-	//LeftMoveArray(m_HightSpeedChartArray3[2], m_c_arrayLength, myrobotdata.JointsNow[2]);  //力矩
-
-	//LeftMoveArray(m_HightSpeedChartArray4[0], m_c_arrayLength, myrobotdata.JointsNow[3]);  //角度值
-	//LeftMoveArray(m_HightSpeedChartArray4[1], m_c_arrayLength, myrobotdata.JointsVelNow[3]);  //速度值
-	//LeftMoveArray(m_HightSpeedChartArray4[2], m_c_arrayLength, myrobotdata.JointsNow[3]);  //力矩
-
 	LeftMoveArray(m_X, m_c_arrayLength, m_count);
 
 	m_pLineSerie1[0]->AddPoints(m_X, m_HightSpeedChartArray1[0], m_c_arrayLength);
 	m_pLineSerie1[1]->AddPoints(m_X, m_HightSpeedChartArray1[1], m_c_arrayLength);
 	m_pLineSerie1[2]->AddPoints(m_X, m_HightSpeedChartArray1[2], m_c_arrayLength);
 
-	//m_pLineSerie2[0]->AddPoints(m_X, m_HightSpeedChartArray2[0], m_c_arrayLength);
-	//m_pLineSerie2[1]->AddPoints(m_X, m_HightSpeedChartArray2[1], m_c_arrayLength);
-	//m_pLineSerie2[2]->AddPoints(m_X, m_HightSpeedChartArray2[2], m_c_arrayLength);
-
-	//m_pLineSerie3[0]->AddPoints(m_X, m_HightSpeedChartArray3[0], m_c_arrayLength);
-	//m_pLineSerie3[1]->AddPoints(m_X, m_HightSpeedChartArray3[1], m_c_arrayLength);
-	//m_pLineSerie3[2]->AddPoints(m_X, m_HightSpeedChartArray3[2], m_c_arrayLength);
-
-	//m_pLineSerie4[0]->AddPoints(m_X, m_HightSpeedChartArray4[0], m_c_arrayLength);
-	//m_pLineSerie4[1]->AddPoints(m_X, m_HightSpeedChartArray4[1], m_c_arrayLength);
-	//m_pLineSerie4[2]->AddPoints(m_X, m_HightSpeedChartArray4[2], m_c_arrayLength);
 }
 
 
-RobotData DealQueueData[100];    //定义全局变量比较省时间
+RobotData DealQueueData[100];    //定义全局变量比较省每次重新分配内存的时间
 void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
@@ -695,18 +665,13 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	ReleaseMutex(g_hMutex);
 	////****使用队列的方式来完成任务结束
 	//++m_count;
-	m_pLineSerie1[0]->ClearSerie();
-	m_pLineSerie1[1]->ClearSerie();
-	m_pLineSerie1[2]->ClearSerie();
-	m_pLineSerie2[0]->ClearSerie();
-	m_pLineSerie2[1]->ClearSerie();
-	m_pLineSerie2[2]->ClearSerie();
-	m_pLineSerie3[0]->ClearSerie();
-	m_pLineSerie3[1]->ClearSerie();
-	m_pLineSerie3[2]->ClearSerie();
-	m_pLineSerie4[0]->ClearSerie();
-	m_pLineSerie4[1]->ClearSerie();
-	m_pLineSerie4[2]->ClearSerie();
+	for (int i = 0; i < 3; i++)
+	{
+		m_pLineSerie1[i]->ClearSerie();
+		m_pLineSerie2[i]->ClearSerie();
+		m_pLineSerie3[i]->ClearSerie();
+		m_pLineSerie4[i]->ClearSerie();
+	}
 
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[0], m_c_arrayLength, DealQueueData, DataSize,11);  //角度值
 	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[1], m_c_arrayLength, DealQueueData, DataSize,12);  //速度值
