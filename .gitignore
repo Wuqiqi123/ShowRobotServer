@@ -39,6 +39,8 @@ UpgradeLog.XML
 *.zip  
 *.dll
 *.lib
+#忽略生成的EXcel表格文件
+*.csv  
   
 #--------------------------  
 # ignored dirs for vc++  
