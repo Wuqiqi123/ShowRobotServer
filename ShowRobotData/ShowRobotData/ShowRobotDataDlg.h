@@ -51,7 +51,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	bool bIsMouseDown[6];
-	double ForceSense[6];
+	int ForceSense[6];
 	CChartCtrl m_ChartCtrl1;
 	CChartCtrl m_ChartCtrl2;
 	CChartCtrl m_ChartCtrl3;
@@ -74,7 +74,11 @@ public:
 	// //本程序作为服务器接受的主机的消息
 	CListBox m_recvMessage;
 	afx_msg void OnLbnSelchangeList1Showmessage();
-	void ShowForce(int i);
+	void addForce(int i);
+	void stopForce(int i);
+	int alive[6];
+	int checkalive[6];
+	bool keystopflag[6];
 	afx_msg LRESULT OnDrawRobotData(WPARAM WParam, LPARAM LParam);
 
 public:

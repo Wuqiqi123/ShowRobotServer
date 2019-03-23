@@ -63,6 +63,9 @@ CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	{
 		bIsMouseDown[i] = false;
 		ForceSense[i] = 0;
+		keystopflag[i] = true;
+		alive[i] = 0;
+		checkalive[i] = 0;
 	}
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -196,6 +199,7 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
+	SetTimer(2, 500, NULL);  //设置定时器，定时周期为300ms
 
 
 	fileopenflag = false;
@@ -658,60 +662,83 @@ RobotData DealQueueData[100];    //定义全局变量比较省每次重新分配内存的时间
 void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
-
-	////****使用队列的方式来完成任务			
-	WaitForSingleObject(g_hMutex, INFINITE);
-	int DataSize = g_QueueData.size();   //返回队列中元素个数
-	for (int i = 0; i < DataSize; i++)
+	if (nIDEvent == 1)
 	{
-		DealQueueData[i] = g_QueueData.front();   //取出
-		g_QueueData.pop();
+		////****使用队列的方式来完成任务			
+		WaitForSingleObject(g_hMutex, INFINITE);
+		int DataSize = g_QueueData.size();   //返回队列中元素个数
+		for (int i = 0; i < DataSize; i++)
+		{
+			DealQueueData[i] = g_QueueData.front();   //取出
+			g_QueueData.pop();
+		}
+		ReleaseMutex(g_hMutex);
+		////****使用队列的方式来完成任务结束
+		//++m_count;
+		for (int i = 0; i < 3; i++)
+		{
+			m_pLineSerie1[i]->ClearSerie();
+			m_pLineSerie2[i]->ClearSerie();
+			m_pLineSerie3[i]->ClearSerie();
+			m_pLineSerie4[i]->ClearSerie();
+		}
+
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray1[0], m_c_arrayLength, DealQueueData, DataSize, 11);  //角度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray1[1], m_c_arrayLength, DealQueueData, DataSize, 12);  //速度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray1[2], m_c_arrayLength, DealQueueData, DataSize, 13);  //力矩
+
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray2[0], m_c_arrayLength, DealQueueData, DataSize, 21);  //角度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray2[1], m_c_arrayLength, DealQueueData, DataSize, 22);  //速度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray2[2], m_c_arrayLength, DealQueueData, DataSize, 23);  //力矩
+
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray3[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray3[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray3[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
+
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
+
+		LeftMoveArrayXWithQueue(m_X, m_c_arrayLength, m_count, DataSize);
+
+		m_pLineSerie1[0]->AddPoints(m_X, m_HightSpeedChartArray1[0], m_c_arrayLength);
+		m_pLineSerie1[1]->AddPoints(m_X, m_HightSpeedChartArray1[1], m_c_arrayLength);
+		m_pLineSerie1[2]->AddPoints(m_X, m_HightSpeedChartArray1[2], m_c_arrayLength);
+
+		m_pLineSerie2[0]->AddPoints(m_X, m_HightSpeedChartArray2[0], m_c_arrayLength);
+		m_pLineSerie2[1]->AddPoints(m_X, m_HightSpeedChartArray2[1], m_c_arrayLength);
+		m_pLineSerie2[2]->AddPoints(m_X, m_HightSpeedChartArray2[2], m_c_arrayLength);
+
+		m_pLineSerie3[0]->AddPoints(m_X, m_HightSpeedChartArray3[0], m_c_arrayLength);
+		m_pLineSerie3[1]->AddPoints(m_X, m_HightSpeedChartArray3[1], m_c_arrayLength);
+		m_pLineSerie3[2]->AddPoints(m_X, m_HightSpeedChartArray3[2], m_c_arrayLength);
+
+		m_pLineSerie4[0]->AddPoints(m_X, m_HightSpeedChartArray4[0], m_c_arrayLength);
+		m_pLineSerie4[1]->AddPoints(m_X, m_HightSpeedChartArray4[1], m_c_arrayLength);
+		m_pLineSerie4[2]->AddPoints(m_X, m_HightSpeedChartArray4[2], m_c_arrayLength);
 	}
-	ReleaseMutex(g_hMutex);
-	////****使用队列的方式来完成任务结束
-	//++m_count;
-	for (int i = 0; i < 3; i++)
+	else if (nIDEvent == 2)  //判断按键是不是一直在按着的定时器
 	{
-		m_pLineSerie1[i]->ClearSerie();
-		m_pLineSerie2[i]->ClearSerie();
-		m_pLineSerie3[i]->ClearSerie();
-		m_pLineSerie4[i]->ClearSerie();
+		for (int i = 0; i < 6; i++)
+		{
+			//alive[i] == checkalive[i]
+			if ((keystopflag[i] || alive[i] == checkalive[i]) && ForceSense[i] != 0)  //按键没有被按下
+			{
+				if (ForceSense[i]>3) ForceSense[i] = ForceSense[i]- 3;
+				else if (ForceSense[i]<-3) ForceSense[i] = ForceSense[i] + 3;
+				else ForceSense[i] = 0;
+				switch (i)
+				{
+				case 0:	{ CString str1; str1.Format(_T("%d"), ForceSense[i]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
+					SetDlgItemText(IDC_STATIC_FX, str1); break; }
+				}
+			}
+			else    //按键的值在这段时间被按下去了：如果活着，或改变状态使得这次的状态和上次的不一样
+			{
+					checkalive[i] = alive[i];   //重新刷新活着的状态
+			}
+		}
 	}
-
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[0], m_c_arrayLength, DealQueueData, DataSize,11);  //角度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[1], m_c_arrayLength, DealQueueData, DataSize,12);  //速度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray1[2], m_c_arrayLength, DealQueueData, DataSize,13);  //力矩
-
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray2[0], m_c_arrayLength, DealQueueData, DataSize, 21);  //角度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray2[1], m_c_arrayLength, DealQueueData, DataSize, 22);  //速度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray2[2], m_c_arrayLength, DealQueueData, DataSize, 23);  //力矩
-
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray3[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
-
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
-	LeftMoveArrayWithQueue(m_HightSpeedChartArray4[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
-
-	LeftMoveArrayXWithQueue(m_X, m_c_arrayLength, m_count, DataSize);
-
-	m_pLineSerie1[0]->AddPoints(m_X, m_HightSpeedChartArray1[0], m_c_arrayLength);
-	m_pLineSerie1[1]->AddPoints(m_X, m_HightSpeedChartArray1[1], m_c_arrayLength);
-	m_pLineSerie1[2]->AddPoints(m_X, m_HightSpeedChartArray1[2], m_c_arrayLength);
-
-	m_pLineSerie2[0]->AddPoints(m_X, m_HightSpeedChartArray2[0], m_c_arrayLength);
-	m_pLineSerie2[1]->AddPoints(m_X, m_HightSpeedChartArray2[1], m_c_arrayLength);
-	m_pLineSerie2[2]->AddPoints(m_X, m_HightSpeedChartArray2[2], m_c_arrayLength);
-
-	m_pLineSerie3[0]->AddPoints(m_X, m_HightSpeedChartArray3[0], m_c_arrayLength);
-	m_pLineSerie3[1]->AddPoints(m_X, m_HightSpeedChartArray3[1], m_c_arrayLength);
-	m_pLineSerie3[2]->AddPoints(m_X, m_HightSpeedChartArray3[2], m_c_arrayLength);
-
-	m_pLineSerie4[0]->AddPoints(m_X, m_HightSpeedChartArray4[0], m_c_arrayLength);
-	m_pLineSerie4[1]->AddPoints(m_X, m_HightSpeedChartArray4[1], m_c_arrayLength);
-	m_pLineSerie4[2]->AddPoints(m_X, m_HightSpeedChartArray4[2], m_c_arrayLength);
-
 
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -745,27 +772,69 @@ BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 	{
 		switch (pMsg->wParam)
 		{
-		case'Q': ShowForce(1); break;
-		case'W': ShowForce(2); break;
-		case'E': ShowForce(3); break;
-		case'R': ShowForce(4); break;
-		case'T': ShowForce(5); break;
-		case'Y': ShowForce(6); break;
-		case'Z': ShowForce(-1); break;
-		case'X': ShowForce(-2); break;
-		case'C': ShowForce(-3); break;
-		case'V': ShowForce(-4); break;
-		case'B': ShowForce(-5); break;
-		case'N': ShowForce(-6); break;
+		case'Q': addForce(1); break;
+		case'W': addForce(2); break;
+		case'E': addForce(3); break;
+		case'R': addForce(4); break;
+		case'T': addForce(5); break;
+		case'Y': addForce(6); break;
+		case'Z': addForce(-1); break;
+		case'X': addForce(-2); break;
+		case'C': addForce(-3); break;
+		case'V': addForce(-4); break;
+		case'B': addForce(-5); break;
+		case'N': addForce(-6); break;
+		default:break;
+		}
+	}
+	else if (pMsg->message == WM_KEYUP)
+	{
+		switch (pMsg->wParam)
+		{
+		case'Q': stopForce(1); break;
+		case'W': stopForce(2); break;
+		case'E': stopForce(3); break;
+		case'R': stopForce(4); break;
+		case'T': stopForce(5); break;
+		case'Y': stopForce(6); break;
+		case'Z': stopForce(-1); break;
+		case'X': stopForce(-2); break;
+		case'C': stopForce(-3); break;
+		case'V': stopForce(-4); break;
+		case'B': stopForce(-5); break;
+		case'N': stopForce(-6); break;
 		default:break;
 		}
 	}
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
-void CShowRobotDataDlg::ShowForce(int i)
+//*
+
+//
+void CShowRobotDataDlg::addForce(int i)
 {
+
+	int channel = abs(i)-1;
+	keystopflag[channel] = false;	
+	alive[channel]++;
 	CString str;
-	str.Format(_T("%.4f"),ForceSense[i]++);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
+	int direction = 0;
+	if (i > 0) direction = 1;  //正向
+	else direction = -1;       //负向
+
+	if (direction > 0)
+		ForceSense[channel]++;       
+	else
+		ForceSense[channel]--;
+	str.Format(_T("%d"),ForceSense[channel]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
 	SetDlgItemText(IDC_STATIC_FX, str);
+}
+void CShowRobotDataDlg::stopForce(int i)
+{
+	int channel = abs(i)-1;
+	keystopflag[channel] = true;
+	//CString str;
+	//str.Format(_T("%.4f"), ForceSense[i]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
+	//SetDlgItemText(IDC_STATIC_FX, str);
 }
