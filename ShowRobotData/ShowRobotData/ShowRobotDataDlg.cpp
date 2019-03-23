@@ -721,3 +721,27 @@ void CShowRobotDataDlg::OnClose()
 	}
 	CDialogEx::OnClose();
 }
+
+
+/*键盘力函数
+1----2----3----4----5----6
+Fx---Fy---Fz---Mx---My---Mz
+*/ 
+BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO:  在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		switch (pMsg->wParam)
+		{
+		case'1':MessageBox(_T("key 1 is be pressed")); break;
+		case'2':MessageBox(_T("key 2 is be pressed")); break;
+		case'3':MessageBox(_T("key 3 is be pressed")); break;
+		case'4':MessageBox(_T("key 4 is be pressed")); break;
+		case'5':MessageBox(_T("key 5 is be pressed")); break;
+		case'6':MessageBox(_T("key 6 is be pressed")); break;
+		default:break;
+		}
+	}
+	return CDialogEx::PreTranslateMessage(pMsg);
+}
