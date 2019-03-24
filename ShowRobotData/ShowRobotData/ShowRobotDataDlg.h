@@ -95,6 +95,7 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void updateStaticText(int channel);
 };
 
 

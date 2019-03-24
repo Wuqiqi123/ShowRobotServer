@@ -199,7 +199,7 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
-	SetTimer(2, 500, NULL);  //设置定时器，定时周期为300ms
+	SetTimer(2, 200, NULL);  //设置定时器，定时周期为300ms
 
 
 	fileopenflag = false;
@@ -721,16 +721,19 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		for (int i = 0; i < 6; i++)
 		{
-			//alive[i] == checkalive[i]
 			if ((keystopflag[i] || alive[i] == checkalive[i]) && ForceSense[i] != 0)  //按键没有被按下
 			{
-				if (ForceSense[i]>3) ForceSense[i] = ForceSense[i]- 3;
-				else if (ForceSense[i]<-3) ForceSense[i] = ForceSense[i] + 3;
+				if (ForceSense[i]>2) ForceSense[i] = ForceSense[i]- 2;
+				else if (ForceSense[i]<-2) ForceSense[i] = ForceSense[i] + 2;
 				else ForceSense[i] = 0;
 				switch (i)
 				{
-				case 0:	{ CString str1; str1.Format(_T("%d"), ForceSense[i]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
-					SetDlgItemText(IDC_STATIC_FX, str1); break; }
+				case 0:	{ updateStaticText(i); break; }
+				case 1:	{ updateStaticText(i); break; }
+				case 2:	{ updateStaticText(i); break; }
+				case 3:	{ updateStaticText(i); break; }
+				case 4:	{ updateStaticText(i); break; }
+				case 5:	{ updateStaticText(i); break; }
 				}
 			}
 			else    //按键的值在这段时间被按下去了：如果活着，或改变状态使得这次的状态和上次的不一样
@@ -818,7 +821,6 @@ void CShowRobotDataDlg::addForce(int i)
 	int channel = abs(i)-1;
 	keystopflag[channel] = false;	
 	alive[channel]++;
-	CString str;
 	int direction = 0;
 	if (i > 0) direction = 1;  //正向
 	else direction = -1;       //负向
@@ -827,14 +829,26 @@ void CShowRobotDataDlg::addForce(int i)
 		ForceSense[channel]++;       
 	else
 		ForceSense[channel]--;
-	str.Format(_T("%d"),ForceSense[channel]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
-	SetDlgItemText(IDC_STATIC_FX, str);
+
+	updateStaticText(channel);
 }
 void CShowRobotDataDlg::stopForce(int i)
 {
-	int channel = abs(i)-1;
+	int channel = abs(i) - 1;
 	keystopflag[channel] = true;
-	//CString str;
-	//str.Format(_T("%.4f"), ForceSense[i]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
-	//SetDlgItemText(IDC_STATIC_FX, str);
+}
+
+void  CShowRobotDataDlg::updateStaticText(int channel)
+{
+	CString str;
+	str.Format(_T("%d"), ForceSense[channel]);   //取机器人缓存区里面m_Robot直角坐标系当前的X的坐标
+	switch (channel)
+	{
+	case 0:{SetDlgItemText(IDC_STATIC_FX, str);break;}
+	case 1:{SetDlgItemText(IDC_STATIC_FY, str);break;}
+	case 2:{SetDlgItemText(IDC_STATIC_FZ, str);break;}
+	case 3:{SetDlgItemText(IDC_STATIC_MX, str);break;}
+	case 4:{SetDlgItemText(IDC_STATIC_MY, str);break;}
+	case 5:{SetDlgItemText(IDC_STATIC_MZ, str);break;}
+	}
 }
