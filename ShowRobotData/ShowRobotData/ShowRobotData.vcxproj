@@ -133,6 +133,7 @@
     <ClInclude Include="ChartCtrl\ChartXYSerie.h" />
     <ClInclude Include="ChartCtrl\PointsOrdering.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ShowForceDlg.h" />
     <ClInclude Include="ShowRobotData.h" />
     <ClInclude Include="ShowRobotDataDlg.h" />
     <ClInclude Include="stdafx.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="ChartCtrl\ChartSurfaceSerie.cpp" />
     <ClCompile Include="ChartCtrl\ChartTitle.cpp" />
     <ClCompile Include="ChartCtrl\ChartXYSerie.cpp" />
+    <ClCompile Include="ShowForceDlg.cpp" />
     <ClCompile Include="ShowRobotData.cpp" />
     <ClCompile Include="ShowRobotDataDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

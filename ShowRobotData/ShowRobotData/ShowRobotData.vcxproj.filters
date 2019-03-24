@@ -126,6 +126,9 @@
     <ClInclude Include="ChartCtrl\PointsOrdering.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ShowForceDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShowRobotData.cpp">
@@ -204,6 +207,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ChartCtrl\ChartXYSerie.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ShowForceDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

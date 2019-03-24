@@ -61,6 +61,7 @@ CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CShowRobotDataDlg::IDD, pParent)
 	, m_autodecrese(FALSE)
 {
+	m_pShowForceDlg = NULL;
 	m_autodecrese = false;
 	for (int i = 0; i < 6; i++)
 	{
@@ -71,6 +72,15 @@ CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 		checkalive[i] = 0;
 	}
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+}
+
+CShowRobotDataDlg::~CShowRobotDataDlg()
+{
+	if (m_pShowForceDlg != NULL)
+	{
+		delete m_pShowForceDlg;
+		m_pShowForceDlg = NULL;
+	}
 }
 
 void CShowRobotDataDlg::DoDataExchange(CDataExchange* pDX)
@@ -94,10 +104,13 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_STARTSERVER, &CShowRobotDataDlg::OnBnClickedStartserver)
 	ON_LBN_SELCHANGE(IDC_LIST1_SHOWMESSAGE, &CShowRobotDataDlg::OnLbnSelchangeList1Showmessage)
 	ON_MESSAGE(UM_DRAWROBOTDATA, &CShowRobotDataDlg::OnDrawRobotData)
+	ON_MESSAGE(WM_CLOSECHILDDLG, &CShowRobotDataDlg::OnCloseChildDlgMessage)
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_RADIO2, &CShowRobotDataDlg::OnBnClickedRadio2)
 	ON_BN_CLICKED(IDC_RADIO1, &CShowRobotDataDlg::OnBnClickedRadio1)
+	ON_BN_CLICKED(IDC_BUTTON2, &CShowRobotDataDlg::OnBnClickedButton2)
+	//ON_MESSAGE(WM_CLOSECHILDDLG, &CShowRobotDataDlg::OnCloseChildDlgMessage)
 END_MESSAGE_MAP()
 
 
@@ -876,4 +889,40 @@ void CShowRobotDataDlg::OnBnClickedRadio2()
 	// TODO:  在此添加控件通知处理程序代码
 	autodecrese = false;
 	KillTimer(2);
+}
+
+void CShowRobotDataDlg::OnBnClickedButton2()   //开启力坐标系
+{
+	// TODO:  在此添加控件通知处理程序代码
+	// 首先检查指针是否为空，若为空，表示对话框还未创建，所以需要申请内存并创建对象。
+	//if (m_pShowForceDlg == NULL)
+	//{
+	//	m_pShowForceDlg = new CShowForceDlg(this);
+	//	m_pShowForceDlg->Create(IDD_DIALOG_FORCE, this);
+	//}
+	//int nDlgWidth = 400;
+	//int nDlgHeight = 200;
+
+	//CRect rcClient;
+	//GetClientRect(&rcClient);
+
+	//// 对话框居中
+	//m_pShowForceDlg->MoveWindow((rcClient.Width() - nDlgWidth) / 2, (rcClient.Height() - nDlgHeight) / 2, nDlgWidth, nDlgHeight, TRUE);
+
+	//// 对话框显示
+	//m_pShowForceDlg->ShowWindow(SW_SHOW);
+
+	if (m_pShowForceDlg == NULL)
+	{
+		m_pShowForceDlg = new CShowForceDlg(this);
+		m_pShowForceDlg->Create(IDD_DIALOG_FORCE,this);
+		m_pShowForceDlg->ShowWindow(SW_SHOWNORMAL); //显示非模态对话框
+	}
+}
+
+LRESULT CShowRobotDataDlg::OnCloseChildDlgMessage(WPARAM wParam, LPARAM lParam)
+{
+	delete m_pShowForceDlg;
+	m_pShowForceDlg = NULL;
+	return 0;
 }
