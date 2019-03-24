@@ -42,3 +42,15 @@ void CShowForceDlg::OnBnClickedOk()
 	::PostMessage(parhwnd, WM_CLOSECHILDDLG, (WPARAM)0, 0);//向父窗口发消息
 	CDialogEx::OnOK();
 }
+
+
+BOOL CShowForceDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  在此添加额外的初始化
+	//
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// 异常:  OCX 属性页应返回 FALSE
+}
