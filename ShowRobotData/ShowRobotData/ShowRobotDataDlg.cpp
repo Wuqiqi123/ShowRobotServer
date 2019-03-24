@@ -9,8 +9,9 @@
 #include <queue>
 #include <fstream>
 
-
-
+#define AUTOSTOPTIME 2000    //单位是毫秒
+#define TIMEINTERVAL 150    //单位是毫秒
+#define AUTODECRNUM (AUTOSTOPTIME/TIMEINTERVAL) 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -58,7 +59,9 @@ END_MESSAGE_MAP()
 
 CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CShowRobotDataDlg::IDD, pParent)
+	, m_autodecrese(FALSE)
 {
+	m_autodecrese = false;
 	for (int i = 0; i < 6; i++)
 	{
 		bIsMouseDown[i] = false;
@@ -81,6 +84,7 @@ void CShowRobotDataDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1_SHOWMESSAGE, m_recvMessage);
 	DDX_Control(pDX, IDC_EDIT2_TCPPort, m_TCPPort);
 	DDX_Control(pDX, IDC_IPADDRESS1, m_TCPIPaddr);
+	DDX_Radio(pDX, IDC_RADIO1, m_autodecrese);
 }
 
 BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
@@ -92,6 +96,8 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_MESSAGE(UM_DRAWROBOTDATA, &CShowRobotDataDlg::OnDrawRobotData)
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_RADIO2, &CShowRobotDataDlg::OnBnClickedRadio2)
+	ON_BN_CLICKED(IDC_RADIO1, &CShowRobotDataDlg::OnBnClickedRadio1)
 END_MESSAGE_MAP()
 
 
@@ -199,7 +205,8 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
-	SetTimer(2, 200, NULL);  //设置定时器，定时周期为300ms
+	if (!m_autodecrese)
+		SetTimer(2, 200, NULL);  //设置定时器，定时周期为300ms
 
 
 	fileopenflag = false;
@@ -721,10 +728,12 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		for (int i = 0; i < 6; i++)
 		{
+			int RealInteral;
 			if ((keystopflag[i] || alive[i] == checkalive[i]) && ForceSense[i] != 0)  //按键没有被按下
 			{
-				if (ForceSense[i]>2) ForceSense[i] = ForceSense[i]- 2;
-				else if (ForceSense[i]<-2) ForceSense[i] = ForceSense[i] + 2;
+				RealInteral = (stopinterval[i]>2 ? stopinterval[i] : 2);
+				if (ForceSense[i]>RealInteral) ForceSense[i] = ForceSense[i] - RealInteral;
+				else if (ForceSense[i]<-RealInteral) ForceSense[i] = ForceSense[i] + RealInteral;
 				else ForceSense[i] = 0;
 				switch (i)
 				{
@@ -762,11 +771,9 @@ void CShowRobotDataDlg::OnClose()
 正向力
 q----w----e----r----t----y
 Fx---Fy---Fz---Mx---My---Mz
-
 反向力
 z----x----c----v----b----n
 Fx---Fy---Fz---Mx---My---Mz
-
 */ 
 BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 {
@@ -789,6 +796,7 @@ BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 		case'N': addForce(-6); break;
 		default:break;
 		}
+		return true;
 	}
 	else if (pMsg->message == WM_KEYUP)
 	{
@@ -808,6 +816,7 @@ BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 		case'N': stopForce(-6); break;
 		default:break;
 		}
+		return true;
 	}
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
@@ -830,6 +839,7 @@ void CShowRobotDataDlg::addForce(int i)
 	else
 		ForceSense[channel]--;
 
+	stopinterval[channel] = abs(ForceSense[channel] / AUTODECRNUM);
 	updateStaticText(channel);
 }
 void CShowRobotDataDlg::stopForce(int i)
@@ -851,4 +861,19 @@ void  CShowRobotDataDlg::updateStaticText(int channel)
 	case 4:{SetDlgItemText(IDC_STATIC_MY, str);break;}
 	case 5:{SetDlgItemText(IDC_STATIC_MZ, str);break;}
 	}
+}
+
+void CShowRobotDataDlg::OnBnClickedRadio1()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	autodecrese = true;
+	SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
+}
+
+
+void CShowRobotDataDlg::OnBnClickedRadio2()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	autodecrese = false;
+	KillTimer(2);
 }

@@ -79,6 +79,8 @@ public:
 	int alive[6];
 	int checkalive[6];
 	bool keystopflag[6];
+	bool autodecrese;
+	int stopinterval[6];
 	afx_msg LRESULT OnDrawRobotData(WPARAM WParam, LPARAM LParam);
 
 public:
@@ -96,6 +98,9 @@ public:
 	afx_msg void OnClose();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	void updateStaticText(int channel);
+	BOOL m_autodecrese;  //力传感器的自动衰减器
+	afx_msg void OnBnClickedRadio2();
+	afx_msg void OnBnClickedRadio1();
 };
 
 
