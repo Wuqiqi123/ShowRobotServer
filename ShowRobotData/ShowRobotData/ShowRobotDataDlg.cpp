@@ -38,6 +38,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnPaint();
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
@@ -50,6 +51,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+	ON_WM_PAINT()
 END_MESSAGE_MAP()
 
 
@@ -925,4 +927,11 @@ LRESULT CShowRobotDataDlg::OnCloseChildDlgMessage(WPARAM wParam, LPARAM lParam)
 	delete m_pShowForceDlg;
 	m_pShowForceDlg = NULL;
 	return 0;
+}
+
+void CAboutDlg::OnPaint()
+{
+	CPaintDC dc(this); // device context for painting
+	// TODO:  在此处添加消息处理程序代码
+	// 不为绘图消息调用 CDialogEx::OnPaint()
 }

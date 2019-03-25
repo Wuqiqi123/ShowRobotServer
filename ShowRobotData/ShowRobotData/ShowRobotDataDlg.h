@@ -9,8 +9,7 @@
 #include "ChartCtrl/ChartAxisLabel.h"
 #include "ChartCtrl/ChartLineSerie.h"
 #include "ChartCtrl/ChartAxis.h"
-#include "afxcmn.h"
-#include <GL/glut.h>  
+#include "afxcmn.h"  
 #include "ShowForceDlg.h"
 struct RobotData
 {
