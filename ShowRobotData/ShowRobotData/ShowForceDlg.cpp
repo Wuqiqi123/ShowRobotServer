@@ -15,6 +15,7 @@ CShowForceDlg::CShowForceDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	mousedown = 0;
+	m_Scale = 1.f;
 }
 
 CShowForceDlg::~CShowForceDlg()
@@ -33,6 +34,8 @@ BEGIN_MESSAGE_MAP(CShowForceDlg, CDialogEx)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEHWHEEL()
+	ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 
@@ -137,9 +140,7 @@ void CShowForceDlg::OnPaint()
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // 用于绘制的设备上下文
-
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
 		// 使图标在工作区矩形中居中
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
@@ -154,10 +155,10 @@ void CShowForceDlg::OnPaint()
 	else
 	{
 		CDialogEx::OnPaint();
+		Reshape();
+		DrawOpenGL();
 	}
 	// TODO:  在此处添加消息处理程序代码
-	Reshape();
-	DrawOpenGL();
 	// 不为绘图消息调用 
 	//CDialogEx::OnPaint();
 }
@@ -179,20 +180,19 @@ void CShowForceDlg::DrawOpenGL()
 	GLfloat m_xAngle = 0.0f;
 	GLfloat m_yAngle = 0.0f;
 	GLfloat m_zAngle = 0.0f;
-	float m_Scale = 0.8f;
 	if (m_hGLRC)
 		wglMakeCurrent(hDC, m_hGLRC);
 	else
 		return;
 
 	//glRotatef(m_zAngle, 0.0f, 0.0f, 1.0f);
-	//glScalef(m_Scale, m_Scale, m_Scale);
+	glScalef(m_Scale, m_Scale, m_Scale);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();                             //将用户坐标系的原点移动到屏幕的中心位置
 	glTranslatef(m_xPos, m_yPos, m_zPos);
-	glRotatef(0, 1.0f, 0.0f, 0.0f);
-	glRotatef(-45, 0.0f, 1.0f, 0.0f);
-	glRotatef(45, 0.0f, 0.0f, 1.0f);
+	glRotatef(30, 1.0f, 0.0f, 0.0f);
+	glRotatef(30, 0.0f, 1.0f, 0.0f);
+	glRotatef(30, 0.0f, 0.0f, 1.0f);
 	glScalef(m_Scale, m_Scale, m_Scale);
 	glColor3f(1.0, 1.0, 0.0);
 	//glutWireTeapot(2);
@@ -223,7 +223,7 @@ void CShowForceDlg::DrawOpenGL()
 	a = 'z';
 	glRasterPos3f(0.f, 0.f, 1.1f);//控制显示位置
 	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
-	//GLDrawSpaceAxes();
+//	GLDrawSpaceAxes();
 	//GLDrawCubeCoordinates();
 	//glutSolidSphere(7.85f, 30, 30);//半径7.85 位于原点 30条经线和纬线
 	::SwapBuffers(hDC);
@@ -533,4 +533,48 @@ void CShowForceDlg::OnLButtonUp(UINT nFlags, CPoint point)
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
 	mousedown = 0;
 	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+
+void CShowForceDlg::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	// 此功能要求 Windows Vista 或更高版本。
+	// _WIN32_WINNT 符号必须 >= 0x0600。
+	// TODO:  在此添加消息处理程序代码和/或调用默认值
+	if (zDelta >= 0)   //放大 zDelta是正值
+	{
+		m_Scale += 0.1 *zDelta / 120;
+	}
+	else   //缩小，zDelta是负值
+	{
+		if ((m_Scale + 0.1 *zDelta / 120)>0.01)  //首先判断减去该值之后缩放因子会变成最小缩放：定义最小缩放值，不能是负的
+			m_Scale += 0.1 *zDelta / 120;
+	}
+	CRect Rect;
+	GetDlgItem(IDC_STATIC)->GetClientRect(&Rect);
+	ScreenToClient(Rect);
+	InvalidateRect(Rect, TRUE);
+	CDialogEx::OnMouseHWheel(nFlags, zDelta, pt);
+}
+
+
+BOOL CShowForceDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	// TODO:  在此添加消息处理程序代码和/或调用默认值
+	//zDelta是120的倍数，可以正或者负
+	if (zDelta >= 0)   //放大 zDelta是正值
+	{
+		m_Scale += 0.1 *zDelta / 120;
+	}
+	else   //缩小，zDelta是负值
+	{
+		if ((m_Scale + 0.1 *zDelta / 120)>0.01)  //首先判断减去该值之后缩放因子会变成最小缩放：定义最小缩放值，不能是负的
+			m_Scale += 0.1 *zDelta / 120;
+	}
+	CRect Rect;
+	GetDlgItem(IDC_STATIC)->GetClientRect(&Rect);
+	ScreenToClient(Rect);
+	InvalidateRect(Rect, TRUE); 
+	//RedrawWindow();
+	return CDialogEx::OnMouseWheel(nFlags, zDelta, pt);
 }

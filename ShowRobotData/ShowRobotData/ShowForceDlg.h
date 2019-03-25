@@ -35,6 +35,7 @@ public:
 	int m_GLPixelIndex;
 	CPoint MDown; //用于记录鼠标按下时的点的坐标
 	CPoint MMove;  //用于记录鼠标移动过程中的点的坐标
+	float m_Scale;
 	int mousedown;  //标志位，0-鼠标没有按下，1-鼠标左键按下
 
 	// 用于绘制图形
@@ -55,4 +56,6 @@ public:
 	void GLGrid(My3DPoint& pt1, My3DPoint& pt2, int num);
 	void CShowForceDlg::GLDrawSpaceAxes(void);
 	void GLDrawCubeCoordinates(void);
+	afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 };
