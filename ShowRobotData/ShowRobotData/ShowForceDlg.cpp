@@ -146,7 +146,7 @@ void CShowForceDlg::Reshape()
 	CRect rect;
 	GetDlgItem(IDC_STATIC)->GetWindowRect(rect);
 	glViewport(0, 0, rect.Width(), rect.Height());
-	//glLoadIdentity();
+	glLoadIdentity();
 }
 // 用于绘制图形
 void CShowForceDlg::DrawOpenGL()
