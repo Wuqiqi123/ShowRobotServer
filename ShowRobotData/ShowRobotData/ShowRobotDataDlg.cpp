@@ -97,6 +97,7 @@ void CShowRobotDataDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT2_TCPPort, m_TCPPort);
 	DDX_Control(pDX, IDC_IPADDRESS1, m_TCPIPaddr);
 	DDX_Radio(pDX, IDC_RADIO1, m_autodecrese);
+	DDX_Control(pDX, IDC_EDIT3, m_NumberEdit);
 }
 
 BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
@@ -113,6 +114,7 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO1, &CShowRobotDataDlg::OnBnClickedRadio1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CShowRobotDataDlg::OnBnClickedButton2)
 	//ON_MESSAGE(WM_CLOSECHILDDLG, &CShowRobotDataDlg::OnCloseChildDlgMessage)
+	//ON_STN_CLICKED(IDC_STATIC_F_FACTOR, &CShowRobotDataDlg::OnStnClickedStaticFFactor)
 END_MESSAGE_MAP()
 
 
@@ -750,17 +752,20 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 				if (ForceSense[i] > RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] - RealInteral;
-					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+					if (m_pShowForceDlg!=NULL)
+						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
 				else if (ForceSense[i] < -RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] + RealInteral;
-					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+					if (m_pShowForceDlg != NULL)
+						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
 				else
 				{
 					ForceSense[i] = 0;
-					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+					if (m_pShowForceDlg != NULL)
+						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
 				switch (i)
 				{
@@ -864,12 +869,14 @@ void CShowRobotDataDlg::addForce(int i)
 	if (direction > 0)
 	{
 		ForceSense[channel]++;
-		m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+		if (m_pShowForceDlg != NULL)
+			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 	}     
 	else
 	{
 		ForceSense[channel]--;
-		m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+		if (m_pShowForceDlg != NULL)
+			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 	}
 
 	stopinterval[channel] = abs(ForceSense[channel] / AUTODECRNUM);
@@ -953,3 +960,4 @@ void CAboutDlg::OnPaint()
 	// TODO:  在此处添加消息处理程序代码
 	// 不为绘图消息调用 CDialogEx::OnPaint()
 }
+

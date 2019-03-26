@@ -129,6 +129,9 @@
     <ClInclude Include="ShowForceDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="NumberEdit.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShowRobotData.cpp">
@@ -210,6 +213,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ShowForceDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NumberEdit.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

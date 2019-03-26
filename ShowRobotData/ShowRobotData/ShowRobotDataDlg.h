@@ -11,6 +11,7 @@
 #include "ChartCtrl/ChartAxis.h"
 #include "afxcmn.h"  
 #include "ShowForceDlg.h"
+#include "NumberEdit.h"
 struct RobotData
 {
 	double JointsNow[4];
@@ -104,6 +105,9 @@ public:
 	afx_msg void OnBnClickedRadio2();
 	afx_msg void OnBnClickedRadio1();
 	afx_msg void OnBnClickedButton2();
+
+	// //1、只能响应输入数字、负号、小数点。以及backspace键；2、只能输入一个负号、小数点；3、小数点不能在负号后面；4、负号只能够在第一位输入；可设置输入的长度（包括负号和小数点）
+	CNumberEdit m_NumberEdit;
 };
 
 
