@@ -747,9 +747,21 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 			if ((keystopflag[i] || alive[i] == checkalive[i]) && ForceSense[i] != 0)  //按键没有被按下
 			{
 				RealInteral = (stopinterval[i]>2 ? stopinterval[i] : 2);
-				if (ForceSense[i]>RealInteral) ForceSense[i] = ForceSense[i] - RealInteral;
-				else if (ForceSense[i]<-RealInteral) ForceSense[i] = ForceSense[i] + RealInteral;
-				else ForceSense[i] = 0;
+				if (ForceSense[i] > RealInteral)
+				{
+					ForceSense[i] = ForceSense[i] - RealInteral;
+					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+				}
+				else if (ForceSense[i] < -RealInteral)
+				{
+					ForceSense[i] = ForceSense[i] + RealInteral;
+					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+				}
+				else
+				{
+					ForceSense[i] = 0;
+					m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+				}
 				switch (i)
 				{
 				case 0:	{ updateStaticText(i); break; }
@@ -850,9 +862,15 @@ void CShowRobotDataDlg::addForce(int i)
 	else direction = -1;       //负向
 
 	if (direction > 0)
-		ForceSense[channel]++;       
+	{
+		ForceSense[channel]++;
+		m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+	}     
 	else
+	{
 		ForceSense[channel]--;
+		m_pShowForceDlg->ReDrawOpenGL(ForceSense);
+	}
 
 	stopinterval[channel] = abs(ForceSense[channel] / AUTODECRNUM);
 	updateStaticText(channel);

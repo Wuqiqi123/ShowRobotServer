@@ -35,11 +35,19 @@ public:
 	int m_GLPixelIndex;
 	CPoint MDown; //用于记录鼠标按下时的点的坐标
 	CPoint MMove;  //用于记录鼠标移动过程中的点的坐标
+	GLfloat m_xAngle;
+	GLfloat m_yAngle;
+	GLfloat m_zAngle;
+	GLfloat m_xPos;
+	GLfloat m_yPos;
+	GLfloat m_zPos;
 	float m_Scale;
 	int mousedown;  //标志位，0-鼠标没有按下，1-鼠标左键按下
 
 	// 用于绘制图形
-	void DrawOpenGL();
+	void initDrawOpenGL();
+	void ReDrawOpenGL(int ForceSense[6]);
+	void RotateModel();
 	// 用于处理当Picture Control框改变时OpenGL的视图中的图形不变形
 	void Reshape();
 	// 定义（设置）并为DC选择最佳像素格式

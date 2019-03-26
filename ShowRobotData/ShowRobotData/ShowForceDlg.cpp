@@ -15,6 +15,12 @@ CShowForceDlg::CShowForceDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	mousedown = 0;
+	m_xPos = -0.2f;
+	m_yPos = -0.2f;
+	m_zPos = 0.0f;
+	m_xAngle = -90.f;
+	m_yAngle = 10.0f;
+	m_zAngle = -30.f;
 	m_Scale = 1.f;
 }
 
@@ -122,6 +128,27 @@ bool CShowForceDlg::CreateViewGLRC(HDC hDC)
 	::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	//Specify the back of the buffer as clear depth  
 	::glClearDepth(1.0f);
+
+	//设定光源以及背景颜色
+	//GLfloat AmbientLight[4] = { 1, 1, 1, 1 };
+	//GLfloat light_position[] = { 1.0, 1.0, 1.0, -1.0 };
+	//GLfloat mat_diffuse[] = { 0.9, 0.9, 0.9, 1.0 };
+	//GLfloat mat_Ambient[] = { 0.1, 0.1, 0.1, 1.0 };
+	//glClearColor(1.0, 1.0, 1.0, 0.0); //设置背景色为蓝色  
+	//glShadeModel(GL_SMOOTH);    //着色方式为渐变色
+	//glMaterialfv(GL_FRONT,GL_AMBIENT,mat_specular); 
+
+	//glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);   //指定用于光照计算的当前材质属性
+	//glMaterialfv(GL_LIGHT0, GL_AMBIENT, mat_Ambient);
+
+	//glLightfv(GL_LIGHT0, GL_POSITION, light_position);   //指定0号光源的位置
+	//glLightfv(GL_LIGHT0, GL_DIFFUSE, mat_diffuse);
+	//glLightfv(GL_LIGHT0, GL_AMBIENT, AmbientLight);
+
+	//glEnable(GL_LIGHTING);    //使用光照
+	//glEnable(GL_LIGHT0);   //使用光源0
+	//glEnable(GL_DEPTH_TEST);   //启用深度测试
+	//glEnable(GL_COLOR_MATERIAL); //启用颜色跟踪
 	//Enable Depth Testing  
 	::glEnable(GL_DEPTH_TEST);
 	return TRUE;
@@ -151,12 +178,13 @@ void CShowForceDlg::OnPaint()
 
 		// 绘制图标
 		dc.DrawIcon(x, y, m_hIcon);
+
+		Reshape();
 	}
 	else
 	{
 		CDialogEx::OnPaint();
-		Reshape();
-		DrawOpenGL();
+		initDrawOpenGL();
 	}
 	// TODO:  在此处添加消息处理程序代码
 	// 不为绘图消息调用 
@@ -172,30 +200,23 @@ void CShowForceDlg::Reshape()
 	glLoadIdentity();
 }
 // 用于绘制图形
-void CShowForceDlg::DrawOpenGL()
+void CShowForceDlg::initDrawOpenGL()
 {
-	GLfloat m_xPos = 0.0f;
-	GLfloat m_yPos = 0.0f;
-	GLfloat m_zPos = 0.0f;
-	GLfloat m_xAngle = 0.0f;
-	GLfloat m_yAngle = 0.0f;
-	GLfloat m_zAngle = 0.0f;
 	if (m_hGLRC)
 		wglMakeCurrent(hDC, m_hGLRC);
 	else
 		return;
 
-	//glRotatef(m_zAngle, 0.0f, 0.0f, 1.0f);
-	glScalef(m_Scale, m_Scale, m_Scale);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();                             //将用户坐标系的原点移动到屏幕的中心位置
 	glTranslatef(m_xPos, m_yPos, m_zPos);
-	glRotatef(30, 1.0f, 0.0f, 0.0f);
-	glRotatef(30, 0.0f, 1.0f, 0.0f);
-	glRotatef(30, 0.0f, 0.0f, 1.0f);
+	glRotatef(m_xAngle, 1.0f, 0.0f, 0.0f);
+	glRotatef(m_zAngle, 0.0f, 0.0f, 1.0f);
+	glRotatef(m_yAngle, 0.0f, 1.0f, 0.0f);
 	glScalef(m_Scale, m_Scale, m_Scale);
+	glPushMatrix();            //将当前矩阵压入矩阵堆栈
 	glColor3f(1.0, 1.0, 0.0);
-	//glutWireTeapot(2);
+
 	glColor3f(1.f, 0.f, 0.f);
 	glLineWidth(2.f);
 	glBegin(GL_LINES);
@@ -226,8 +247,87 @@ void CShowForceDlg::DrawOpenGL()
 //	GLDrawSpaceAxes();
 	//GLDrawCubeCoordinates();
 	//glutSolidSphere(7.85f, 30, 30);//半径7.85 位于原点 30条经线和纬线
+	::glFlush();
 	::SwapBuffers(hDC);
 
+}
+
+void CShowForceDlg::RotateModel()
+{
+
+}
+void CShowForceDlg::ReDrawOpenGL(int ForceSense[6])
+{
+	if (m_hGLRC)
+		wglMakeCurrent(hDC, m_hGLRC);
+	else
+		return;
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();                             //将用户坐标系的原点移动到屏幕的中心位置
+
+	glTranslatef(m_xPos, m_yPos, m_zPos);
+	glRotatef(m_xAngle, 1.0f, 0.0f, 0.0f);
+	glRotatef(m_zAngle, 0.0f, 0.0f, 1.0f);
+	glRotatef(m_yAngle, 0.0f, 1.0f, 0.0f);
+	glScalef(m_Scale, m_Scale, m_Scale);
+
+	glColor3f(1.0, 1.0, 0.0);
+	glColor3f(1.f, 0.f, 0.f);
+	glLineWidth(2.f);
+	glBegin(GL_LINES);
+	glVertex3f(0.0f, 0.0f, 0.f);
+	glVertex3f(1.0, 0.0f, 0.f);
+	glEnd();
+	char a = 'x';
+	glRasterPos3f(1.1, 0.f, 0.f);//控制显示位置
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
+
+	glColor3f(0, 1.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex3f(0.0f, 0.0f, 0.f);
+	glVertex3f(0.f, 1.0f, 0.f);
+	glEnd();
+	a = 'y';
+	glRasterPos3f(0.f, 1.1f, 0.f);//控制显示位置
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
+
+	glColor3f(0.0, 0.0, 1.0);
+	glBegin(GL_LINES);
+	glVertex3f(0.0f, 0.0f, 0.f);
+	glVertex3f(0.f, 0.0f, 1.f);
+	glEnd();
+	a = 'z';
+	glRasterPos3f(0.f, 0.f, 1.1f);//控制显示位置
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
+
+	if (ForceSense != NULL)
+	{   //三维力的值
+		glColor3f(0.5, 0.5, 0.8);
+		glBegin(GL_LINES);
+		glVertex3f(0.0f, 0.0f, 0.f);
+		glVertex3f(ForceSense[0] / 6., ForceSense[1] / 6., ForceSense[2] / 6.);
+		glEnd();
+		a = 'F';
+		glRasterPos3f(ForceSense[0] / 6, ForceSense[1] / 6, 0.1+ForceSense[2] / 6.);//控制显示位置
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
+
+		//三维力矩的值
+		glColor3f(0.3, 0.2, 0.5);
+		glBegin(GL_LINES);
+		glVertex3f(0.0f, 0.0f, 0.f);
+		glVertex3f(ForceSense[3] / 6., ForceSense[4] / 6., ForceSense[5] / 6.);
+		glEnd();
+		a = 'M';
+		glRasterPos3f(ForceSense[3] / 6, ForceSense[4] / 6, 0.1 + ForceSense[5] / 6.);//控制显示位置
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, a);
+	}
+
+
+	//	GLDrawSpaceAxes();
+	//GLDrawCubeCoordinates();
+	::glFlush();
+	::SwapBuffers(hDC);
 }
 
 #define AXES_LEN 10 //坐标轴长
@@ -498,21 +598,16 @@ void CShowForceDlg::Render3DCylinder(My3DPoint &m_point1, My3DPoint &m_point2, d
 void CShowForceDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
-	if (mousedown)
+	if (mousedown&&(GetCapture() == this))
 	{
-		MMove.x += point.x - MDown.x; //鼠标在窗口x轴方向上的增量加到视点与x轴的夹角上，就可以左右转
-		if ((MMove.x >= 180) | (MMove.x <= -180))
-		{
-			MMove.x = 0;
-		}
-
-		MMove.y += point.y - MDown.y;  //鼠标在窗口y轴方向上的改变加到视点y的坐标上，就可以上下转
-		if ((MMove.y >= 90) | (MMove.y <= -90))
-		{
-			MMove.y = 0;
-		}
+		m_yAngle += (point.x - MMove.x) / 200;
+		m_xAngle += (point.y - MMove.y) / 200;
+		CRect Rect;
+		//GetDlgItem(IDC_STATIC)->GetClientRect(&Rect);
+		//ScreenToClient(Rect);
+		//InvalidateRect(Rect, TRUE);
 		MDown.x = point.x, MDown.y = point.y;  //将此时的坐标作为旧值，为下一次计算增量做准
-
+		ReDrawOpenGL(NULL);
 	}
 	CDialogEx::OnMouseMove(nFlags, point);
 }
@@ -521,9 +616,10 @@ void CShowForceDlg::OnMouseMove(UINT nFlags, CPoint point)
 void CShowForceDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
-	MDown.x = point.x;
-	MDown.y = point.y;
+	MDown.x = 0;
+	MDown.y = 0;
 	mousedown = 1;
+	SetCapture();
 	CDialogEx::OnLButtonDown(nFlags, point);
 }
 
@@ -532,6 +628,8 @@ void CShowForceDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
 	mousedown = 0;
+	MDown = CPoint(0, 0);
+	ReleaseCapture();
 	CDialogEx::OnLButtonUp(nFlags, point);
 }
 
