@@ -21,7 +21,12 @@
 UINT server_thd(LPVOID p);   //申明线程函数
 CString IP;  //定义为全局变量
 SOCKET listen_sock;
-SOCKET sock;
+//SOCKET sockforreality;
+//SOCKET sockforHelix;
+
+DWORD WINAPI ServerThreadForReality(LPVOID lp);
+DWORD WINAPI ServerThreadForHelix(LPVOID lp);
+
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -531,27 +536,99 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 		dlg->update(_T("绑定错误"));
 	}
 
-    listen(listen_sock, 1);     //开始监听,这里使用的是阻塞模式
-	if ((sock = accept(listen_sock, (struct sockaddr *)&client_addr, &iaddrSize)) == INVALID_SOCKET)//接收套接字
-	{
-		dlg->update(_T("accept 失败"));
-	}
-	else
-	{
-		CString port;
-		port.Format(_T("%d"), int(ntohs(client_addr.sin_port)));
-		dlg->update(_T("已连接客户端：") + CString(inet_ntoa(client_addr.sin_addr)) + "  端口：" + port);
-	}
+    listen(listen_sock, 2);     //开始监听,这里使用的是阻塞模式
 
+	//打开另一个程序
+	//WinExec("F:\\HelixShowRobot\\HelixSCARA\\HelixSCARA\\bin\\Debug\\HelixSCARA.exe",SW_SHOW);
+	while (1)
+	{	
+		SOCKET *ClientSocket = new SOCKET;
+		if ((*ClientSocket = accept(listen_sock, (struct sockaddr *)&client_addr, &iaddrSize)) == INVALID_SOCKET)//接收套接字
+		{
+			dlg->update(_T("accept 失败"));
+		}
+		else
+		{
+			CString port;
+			port.Format(_T("%d"), int(ntohs(client_addr.sin_port)));
+			CString IP;
+			CString HelixIP("127.0.0.1");
+			IP = CString(inet_ntoa(client_addr.sin_addr));
+			dlg->update(_T("已连接客户端：") + IP + "  端口：" + port);
+			if (IP == HelixIP)    //电脑上的helix通信
+			{
+				CreateThread(NULL, 0, ServerThreadForHelix, ClientSocket, 0, NULL);
+			}
+			else
+			{
+				CreateThread(NULL, 0, ServerThreadForReality, ClientSocket, 0, NULL);
+			}
 
+		}
+	}
+	
+	////////////接收数据
+	//g_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
+	//RobotData MyRobotData;
+	//char recbuf[sizeof(MyRobotData)];
+	//memset(recbuf, 0, sizeof(MyRobotData));
+	//while (1)
+	//{		
+	//	if ((res = recv(sock, recbuf, sizeof(recbuf), 0)) == -1)    //这个rev函数也是阻塞模式
+	//	{
+	//		dlg->update(_T("失去客户端的连接"));
+	//		break;
+	//	}
+	//	else
+	//	{
+	//		memset(&MyRobotData, 0, sizeof(MyRobotData));
+	//		memcpy(&MyRobotData, recbuf, sizeof(MyRobotData));
+
+	//		//////保存这个文件为excel
+	//		oFile.precision(6); //设置精度
+	//		//发现传输过程中有一些坏点，将这些观点剔除掉
+	//		if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
+	//		{
+	//			oFile << MyRobotData.JointsNow[0] << "," << MyRobotData.JointsVelNow[0] << "," << MyRobotData.JointsTorque[0] << "," << MyRobotData.JointsNext[0] << "," << MyRobotData.JointsVelNext[0] << ",";
+	//			oFile << MyRobotData.JointsNow[1] << "," << MyRobotData.JointsVelNow[1] << "," << MyRobotData.JointsTorque[1] << "," << MyRobotData.JointsNext[1] << "," << MyRobotData.JointsVelNext[1] << ",";
+	//			oFile << MyRobotData.JointsNow[2] << "," << MyRobotData.JointsVelNow[2] << "," << MyRobotData.JointsTorque[2] << "," << MyRobotData.JointsNext[2] << "," << MyRobotData.JointsVelNext[2] << ",";
+	//			oFile << MyRobotData.JointsNow[3] << "," << MyRobotData.JointsVelNow[3] << "," << MyRobotData.JointsTorque[3] << "," << MyRobotData.JointsNext[3] << "," << MyRobotData.JointsVelNext[3];
+	//			oFile << std::endl;
+	//		}
+
+	//		//////保存这个文件为excel结束
+
+	//		//****使用队列的方式来完成任务			
+	//		WaitForSingleObject(g_hMutex, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
+	//		if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
+	//		{
+	//			g_QueueData.push(MyRobotData);
+	//		}
+	//		ReleaseMutex(g_hMutex);
+	//		//****使用队列的方式来完成任务结束
+
+	//		////******使用发送消息的方式来完成任务
+	//		//::PostMessageA(hWnd,UM_DRAWROBOTDATA,(WPARAM)&MyRobotData,1);
+	//		////******使用发送消息的方式来完成任务结束
+	//	}
+	//}
+	WSACleanup();
+	return 0;
+}
+
+DWORD WINAPI ServerThreadForReality(LPVOID lp)
+{
+	SOCKET *ClientSocketRea = (SOCKET*)lp;
 	////////////接收数据
 	g_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
 	RobotData MyRobotData;
 	char recbuf[sizeof(MyRobotData)];
+	int res;
+	CShowRobotDataDlg * dlg = (CShowRobotDataDlg *)AfxGetApp()->GetMainWnd();
 	memset(recbuf, 0, sizeof(MyRobotData));
 	while (1)
-	{		
-		if ((res = recv(sock, recbuf, sizeof(recbuf), 0)) == -1)    //这个rev函数也是阻塞模式
+	{
+		if ((res = recv(*ClientSocketRea, recbuf, sizeof(recbuf), 0)) == -1)    //这个rev函数也是阻塞模式
 		{
 			dlg->update(_T("失去客户端的连接"));
 			break;
@@ -588,10 +665,12 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			//::PostMessageA(hWnd,UM_DRAWROBOTDATA,(WPARAM)&MyRobotData,1);
 			////******使用发送消息的方式来完成任务结束
 		}
-
-
 	}
-	WSACleanup();
+	return 0;
+}
+
+DWORD WINAPI ServerThreadForHelix(LPVOID lp)
+{
 	return 0;
 }
 
