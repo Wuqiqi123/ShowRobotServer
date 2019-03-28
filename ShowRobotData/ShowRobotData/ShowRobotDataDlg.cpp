@@ -551,11 +551,11 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 		{
 			CString port;
 			port.Format(_T("%d"), int(ntohs(client_addr.sin_port)));
-			CString IP;
-			CString HelixIP("127.0.0.1");
-			IP = CString(inet_ntoa(client_addr.sin_addr));
-			dlg->update(_T("已连接客户端：") + IP + "  端口：" + port);
-			if (IP == HelixIP)    //电脑上的helix通信
+			CString ClientIP;
+			ClientIP = CString(inet_ntoa(client_addr.sin_addr));
+			AfxMessageBox(ClientIP, MB_OK);
+			dlg->update(_T("已连接客户端：") + ClientIP + "  端口：" + port);
+			if (ClientIP == IP)    //电脑上的helix通信ClientIP:接受到的IP地址  IP:自己本机的IP
 			{
 				CreateThread(NULL, 0, ServerThreadForHelix, ClientSocket, 0, NULL);
 			}
@@ -671,6 +671,13 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
+	SOCKET *ClientSocketHelix = (SOCKET*)lp;
+	char buff[6] = {'H','e','l','l','0',0};
+	while (1)
+	{
+		send(*ClientSocketHelix, buff, sizeof(buff), 0);
+		Sleep(1000);
+	}
 	return 0;
 }
 
