@@ -553,7 +553,7 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			port.Format(_T("%d"), int(ntohs(client_addr.sin_port)));
 			CString ClientIP;
 			ClientIP = CString(inet_ntoa(client_addr.sin_addr));
-			AfxMessageBox(ClientIP, MB_OK);
+//			AfxMessageBox(ClientIP, MB_OK);   //调试用
 			dlg->update(_T("已连接客户端：") + ClientIP + "  端口：" + port);
 			if (ClientIP == IP)    //电脑上的helix通信ClientIP:接受到的IP地址  IP:自己本机的IP
 			{
@@ -672,7 +672,18 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
-	char buff[6] = {'H','e','l','l','0',0};
+	RobotData MyRobotData;
+	memset(&MyRobotData, 0, sizeof(MyRobotData));
+	for (int i = 0; i < 4; i++)
+	{
+		MyRobotData.JointsNow[i] = 10.2;
+		MyRobotData.JointsVelNow[i] = 100.4;
+		MyRobotData.JointsTorque[i] = 60.0;
+		MyRobotData.CartesianPositionNow[i]= 2003.98;
+	}
+	char buff[sizeof(MyRobotData)];
+	memset(buff, 0, sizeof(MyRobotData));
+	memcpy(buff, &MyRobotData, sizeof(MyRobotData));
 	while (1)
 	{
 		send(*ClientSocketHelix, buff, sizeof(buff), 0);
