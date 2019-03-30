@@ -511,6 +511,7 @@ void LeftMoveArrayXWithQueue(double* ptr, size_t length, unsigned int& data, int
 
 std::queue<RobotData> g_QueueData;  //全局队列
 HANDLE g_hMutex;  //互斥量句柄
+HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
 UINT server_thd(LPVOID p)//线程要调用的函数
 {
 	HWND hWnd = (HWND)p;
@@ -539,7 +540,7 @@ UINT server_thd(LPVOID p)//线程要调用的函数
     listen(listen_sock, 2);     //开始监听,这里使用的是阻塞模式
 
 	//打开另一个程序
-	//WinExec("F:\\HelixShowRobot\\HelixSCARA\\HelixSCARA\\bin\\Debug\\HelixSCARA.exe",SW_SHOW);
+	//WinExec("F:\\HelixShowRobot\\HelixSCARA\\HelixSCARA\\bin\\x86\\Release\\HelixSCARA.exe",SW_SHOW);
 	while (1)
 	{	
 		SOCKET *ClientSocket = new SOCKET;
@@ -555,6 +556,9 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			ClientIP = CString(inet_ntoa(client_addr.sin_addr));
 //			AfxMessageBox(ClientIP, MB_OK);   //调试用
 			dlg->update(_T("已连接客户端：") + ClientIP + "  端口：" + port);
+			RobotData initRobotData;
+			memset(&initRobotData, 0, sizeof(initRobotData));
+			g_QueueData.push(initRobotData);
 			if (ClientIP == IP)    //电脑上的helix通信ClientIP:接受到的IP地址  IP:自己本机的IP
 			{
 				CreateThread(NULL, 0, ServerThreadForHelix, ClientSocket, 0, NULL);
@@ -616,6 +620,7 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 	return 0;
 }
 
+RobotData HelixRobotData;
 DWORD WINAPI ServerThreadForReality(LPVOID lp)
 {
 	SOCKET *ClientSocketRea = (SOCKET*)lp;
@@ -657,6 +662,8 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 			if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
 			{
 				g_QueueData.push(MyRobotData);
+				memcpy(&HelixRobotData, &MyRobotData, sizeof(MyRobotData));
+				ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 			}
 			ReleaseMutex(g_hMutex);
 			//****使用队列的方式来完成任务结束
@@ -672,22 +679,16 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
-	RobotData MyRobotData;
-	memset(&MyRobotData, 0, sizeof(MyRobotData));
-	for (int i = 0; i < 4; i++)
+	g_ThreadSema = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
+	while (true)
 	{
-		MyRobotData.JointsNow[i] = 10.2;
-		MyRobotData.JointsVelNow[i] = 100.4;
-		MyRobotData.JointsTorque[i] = 60.0;
-		MyRobotData.CartesianPositionNow[i]= 2003.98;
-	}
-	char buff[sizeof(MyRobotData)];
-	memset(buff, 0, sizeof(MyRobotData));
-	memcpy(buff, &MyRobotData, sizeof(MyRobotData));
-	while (1)
-	{
+		WaitForSingleObject(g_ThreadSema, INFINITE); //等待信号量资源数>0
+	//	memset(&HelixRobotData, 0, sizeof(HelixRobotData));
+		char buff[sizeof(HelixRobotData)];
+		memset(buff, 0, sizeof(HelixRobotData));
+		memcpy(buff, &HelixRobotData, sizeof(HelixRobotData));
 		send(*ClientSocketHelix, buff, sizeof(buff), 0);
-		Sleep(1000);
+		//Sleep(30);
 	}
 	return 0;
 }
