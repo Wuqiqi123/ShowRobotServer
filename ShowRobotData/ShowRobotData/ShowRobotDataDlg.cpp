@@ -1102,7 +1102,7 @@ void CAboutDlg::OnPaint()
 
 extern HANDLE g_hMutexForJS;
 DWORD WINAPI RcvDataJS(LPVOID);
-
+bool isjoystickNULL = true;
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
@@ -1111,6 +1111,7 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 		if (joystick == NULL)
 		{
 			joystick = new CJoystick();
+			isjoystickNULL = false;
 			joystick->m_hWnd = m_hWnd; //首先获得窗口句柄
 			if (!joystick->Initialise())//初始化
 			{
@@ -1124,6 +1125,15 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 	}
 	else
 	{
+
+		if (joystick != NULL)
+		{
+			WaitForSingleObject(g_hMutexForJS, INFINITE);    //保护不能在使用这些值的时候释放该对象
+			delete joystick;
+			joystick = NULL;
+			isjoystickNULL = true;
+			ReleaseMutex(g_hMutexForJS);
+		}		
 		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
 	}
 

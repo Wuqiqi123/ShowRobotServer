@@ -36,6 +36,11 @@ CJoystick::~CJoystick(void)
          m_lpDI->Release();
          m_lpDI = NULL;    
      }
+	 if (hThread)
+	 {
+		 CloseHandle(hThread);
+		 hThread = NULL;
+	 }
 }
 
 bool CJoystick::Initialise(void)
@@ -187,24 +192,27 @@ void CJoystick::Startlisten()
 HANDLE g_hMutexForJS;  //互斥量句柄
 extern RobotData HelixRobotData;
 extern HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
+extern bool isjoystickNULL;
 DWORD WINAPI GetJSDataThread(LPVOID p)
 {
-	//g_hMutexForJS = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
+	g_hMutexForJS = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
 	CJoystick* JS  = (CJoystick*)p;
-	while (true)
+	while (JS!=NULL)
 	{
+		WaitForSingleObject(g_hMutexForJS, INFINITE);    //保护不能在使用这些值的时候释放该对象
+		if (isjoystickNULL == true)
+			break;
 		if (FAILED(JS->PollDevice())) //轮循
 		{
 			AfxMessageBox(_T("读取设备状态错误"), MB_OK);
 			return 0;
 		}
-		TCHAR strText[512] = { 0 }; // Device state text
 	//	WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
 		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x = (JS->m_diJs.lX - 32768) * 1000 / 32768;
 		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y = (JS->m_diJs.lY - 32768) * 1000 / 32768;
 		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z = (JS->m_diJs.lZ - 32768) * 1000 / 32768;
 		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R = (JS->m_diJs.lRz);
-	//	ReleaseMutex(g_hMutexForJS);
+		ReleaseMutex(g_hMutexForJS);
 		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 		Sleep(10);
 	}
