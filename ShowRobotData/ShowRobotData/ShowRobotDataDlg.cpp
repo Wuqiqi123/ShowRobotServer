@@ -67,6 +67,7 @@ END_MESSAGE_MAP()
 CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CShowRobotDataDlg::IDD, pParent)
 	, m_autodecrese(FALSE)
+	, m_isnJS(FALSE)
 {
 	m_pShowForceDlg = NULL;
 	m_autodecrese = false;
@@ -78,6 +79,7 @@ CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 		alive[i] = 0;
 		checkalive[i] = 0;
 	}
+	joystick = NULL;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -103,6 +105,7 @@ void CShowRobotDataDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_IPADDRESS1, m_TCPIPaddr);
 	DDX_Radio(pDX, IDC_RADIO1, m_autodecrese);
 	DDX_Control(pDX, IDC_EDIT3, m_NumberEdit);
+	DDX_Radio(pDX, IDC_RADIO3, m_isnJS);
 }
 
 BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
@@ -120,6 +123,7 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CShowRobotDataDlg::OnBnClickedButton2)
 	//ON_MESSAGE(WM_CLOSECHILDDLG, &CShowRobotDataDlg::OnCloseChildDlgMessage)
 	//ON_STN_CLICKED(IDC_STATIC_F_FACTOR, &CShowRobotDataDlg::OnStnClickedStaticFFactor)
+	ON_BN_CLICKED(IDC_BUTTON_CHOOSE_FORCESOURCE, &CShowRobotDataDlg::OnBnClickedButtonChooseForcesource)
 END_MESSAGE_MAP()
 
 
@@ -225,6 +229,14 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 		m_pLineSerie3[i] = m_ChartCtrl3.CreateLineSerie();
 		m_pLineSerie4[i] = m_ChartCtrl4.CreateLineSerie();
 	}
+	/////////////////////////////////////////////////////
+	//joystick.m_hWnd = m_hWnd; //首先获得窗口句柄
+	//if (!joystick.Initialise())//初始化
+	//{
+	//	OutputDebugString(LPCWSTR("初始化游戏杆失败 - in CDIJoystickDlg::OnInitDialog/n"));
+	//	//OnCancel();
+	//	//return FALSE;
+	//}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
 	if (!m_autodecrese)
@@ -850,18 +862,27 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 				if (ForceSense[i] > RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] - RealInteral;
+					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+
 					if (m_pShowForceDlg!=NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
 				else if (ForceSense[i] < -RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] + RealInteral;
+					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+
 					if (m_pShowForceDlg != NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
 				else
 				{
 					ForceSense[i] = 0;
+					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+
 					if (m_pShowForceDlg != NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 				}
@@ -967,12 +988,17 @@ void CShowRobotDataDlg::addForce(int i)
 	if (direction > 0)
 	{
 		ForceSense[channel]++;
+		HelixRobotData.Origin6axisForce[channel] = ForceSense[channel];
+		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+
 		if (m_pShowForceDlg != NULL)
 			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 	}     
 	else
 	{
 		ForceSense[channel]--;
+		HelixRobotData.Origin6axisForce[channel] = ForceSense[channel];
+		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 		if (m_pShowForceDlg != NULL)
 			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 	}
@@ -1059,3 +1085,43 @@ void CAboutDlg::OnPaint()
 	// 不为绘图消息调用 CDialogEx::OnPaint()
 }
 
+
+extern HANDLE g_hMutexForJS;
+DWORD WINAPI RcvDataJS(LPVOID);
+
+void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	if (joystick == NULL)
+	{
+		joystick = new CJoystick();
+		joystick->m_hWnd = m_hWnd; //首先获得窗口句柄
+		if (!joystick->Initialise())//初始化
+		{
+			AfxMessageBox(_T("初始化游戏杆失败 - in CDIJoystickDlg::OnInitDialog!"), MB_OK);
+			//OnCancel();
+		}
+		joystick->Startlisten();
+		Sleep(100);
+		CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
+	}
+
+}
+
+DWORD WINAPI RcvDataJS(LPVOID p)
+{
+	CJoystick* JS = (CJoystick*)p;
+	while (true)
+	{
+		WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
+		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x;
+		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y;
+		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z;
+		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R;
+		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+		ReleaseMutex(g_hMutexForJS);
+		Sleep(5);
+	}
+
+	return 0;
+}
