@@ -125,6 +125,7 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_CHOOSE_FORCESOURCE, &CShowRobotDataDlg::OnBnClickedButtonChooseForcesource)
 	ON_BN_CLICKED(IDC_RADIO4, &CShowRobotDataDlg::OnBnClickedRadio4)
 	ON_BN_CLICKED(IDC_RADIO3, &CShowRobotDataDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_RADIO5, &CShowRobotDataDlg::OnBnClickedRadio5)
 END_MESSAGE_MAP()
 
 
@@ -408,6 +409,7 @@ void CShowRobotDataDlg::OnLbnSelchangeList1Showmessage()
 void CShowRobotDataDlg::update(CString s)
 {
 	m_recvMessage.AddString(s);
+	m_recvMessage.SetTopIndex(m_recvMessage.GetCount() - 1);
 }
 
 /// \brief 左移数组  
@@ -634,12 +636,14 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 	return 0;
 }
 
+bool isconnetRealRobot = false;
 RobotData HelixRobotData;
 DWORD WINAPI ServerThreadForReality(LPVOID lp)
 {
 	SOCKET *ClientSocketRea = (SOCKET*)lp;
 	////////////接收数据
 	g_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
+	isconnetRealRobot = true;
 	RobotData MyRobotData;
 	char recbuf[sizeof(MyRobotData)];
 	int res;
@@ -696,6 +700,11 @@ DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
 	g_ThreadSema = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
 	isconnetHelix = true;
+	CShowRobotDataDlg * dlg = (CShowRobotDataDlg *)AfxGetApp()->GetMainWnd();
+	dlg->update(_T("请选择某一种力控制方式："));
+	dlg->update(_T("1、如果选择摇杆，力将由摇杆产生;"));
+	dlg->update(_T("2、如果选择键盘，力将由键盘产生; "));
+	dlg->update(_T("3、如果选择函数，将由机器人客户端本身的力函数产生"));
 	while (true)
 	{
 		WaitForSingleObject(g_ThreadSema, INFINITE); //等待信号量资源数>0
@@ -1106,6 +1115,16 @@ bool isjoystickNULL = true;
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	//if (!isconnetRealRobot)
+	//{
+	//	update(_T("请先连接机器人客户端！"));
+	//	return;
+	//}
+	if (!isconnetHelix)
+	{
+		update(_T("请先连接HelixSCARA显示客户端！"));
+		return;
+	}
 	if (!m_isnJS)
 	{
 		if (joystick == NULL)
@@ -1113,12 +1132,14 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 			joystick = new CJoystick();
 			isjoystickNULL = false;
 			joystick->m_hWnd = m_hWnd; //首先获得窗口句柄
+
 			if (!joystick->Initialise())//初始化
 			{
 				AfxMessageBox(_T("初始化游戏杆失败 - in CDIJoystickDlg::OnInitDialog!"), MB_OK);
 				//OnCancel();
 			}
 			joystick->Startlisten();
+			update(_T("使用摇杆生成力，成功！"));
 			//Sleep(100);
 			//CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
 		}
@@ -1135,6 +1156,7 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 			ReleaseMutex(g_hMutexForJS);
 		}		
 		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
+		update(_T("使用键盘生成力，成功！"));
 	}
 
 }
@@ -1162,16 +1184,27 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 //	return 0;
 //}
 
+///////选择键盘的生成方式
 void CShowRobotDataDlg::OnBnClickedRadio4()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	m_isnJS = true;   //没有选中JS,使用
-
+	update(_T("请选择一个力生成方式：\n") );
 }
 
-
+////////选择摇杆的生成方式
 void CShowRobotDataDlg::OnBnClickedRadio3()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	m_isnJS = false ;   //选中JS
+	update(_T("请选择一个力生成方式：\n") );
  }
+
+
+
+///////////选择函数的生成方式
+void CShowRobotDataDlg::OnBnClickedRadio5()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	update(_T("请选择一个力生成方式：\n"));
+}
