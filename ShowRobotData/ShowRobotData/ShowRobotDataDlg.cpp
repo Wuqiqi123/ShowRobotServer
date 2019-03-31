@@ -124,6 +124,8 @@ BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
 	//ON_MESSAGE(WM_CLOSECHILDDLG, &CShowRobotDataDlg::OnCloseChildDlgMessage)
 	//ON_STN_CLICKED(IDC_STATIC_F_FACTOR, &CShowRobotDataDlg::OnStnClickedStaticFFactor)
 	ON_BN_CLICKED(IDC_BUTTON_CHOOSE_FORCESOURCE, &CShowRobotDataDlg::OnBnClickedButtonChooseForcesource)
+	ON_BN_CLICKED(IDC_RADIO4, &CShowRobotDataDlg::OnBnClickedRadio4)
+	ON_BN_CLICKED(IDC_RADIO3, &CShowRobotDataDlg::OnBnClickedRadio3)
 END_MESSAGE_MAP()
 
 
@@ -239,7 +241,7 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	//}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
-	if (!m_autodecrese)
+	if (!m_autodecrese&&m_isnJS)
 		SetTimer(2, 200, NULL);  //设置定时器，定时周期为300ms
 
 
@@ -688,10 +690,12 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 	return 0;
 }
 
+bool isconnetHelix = false;
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
 	g_ThreadSema = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
+	isconnetHelix = true;
 	while (true)
 	{
 		WaitForSingleObject(g_ThreadSema, INFINITE); //等待信号量资源数>0
@@ -929,46 +933,50 @@ Fx---Fy---Fz---Mx---My---Mz
 BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO:  在此添加专用代码和/或调用基类
-	if (pMsg->message == WM_KEYDOWN)
+	if (m_isnJS)
 	{
-		switch (pMsg->wParam)
+		if (pMsg->message == WM_KEYDOWN)
 		{
-		case'Q': addForce(1); break;
-		case'W': addForce(2); break;
-		case'E': addForce(3); break;
-		case'R': addForce(4); break;
-		case'T': addForce(5); break;
-		case'Y': addForce(6); break;
-		case'Z': addForce(-1); break;
-		case'X': addForce(-2); break;
-		case'C': addForce(-3); break;
-		case'V': addForce(-4); break;
-		case'B': addForce(-5); break;
-		case'N': addForce(-6); break;
-		default:break;
+			switch (pMsg->wParam)
+			{
+			case'Q': addForce(1); break;
+			case'W': addForce(2); break;
+			case'E': addForce(3); break;
+			case'R': addForce(4); break;
+			case'T': addForce(5); break;
+			case'Y': addForce(6); break;
+			case'Z': addForce(-1); break;
+			case'X': addForce(-2); break;
+			case'C': addForce(-3); break;
+			case'V': addForce(-4); break;
+			case'B': addForce(-5); break;
+			case'N': addForce(-6); break;
+			default:break;
+			}
+			return true;
 		}
-		return true;
-	}
-	else if (pMsg->message == WM_KEYUP)
-	{
-		switch (pMsg->wParam)
+		else if (pMsg->message == WM_KEYUP)
 		{
-		case'Q': stopForce(1); break;
-		case'W': stopForce(2); break;
-		case'E': stopForce(3); break;
-		case'R': stopForce(4); break;
-		case'T': stopForce(5); break;
-		case'Y': stopForce(6); break;
-		case'Z': stopForce(-1); break;
-		case'X': stopForce(-2); break;
-		case'C': stopForce(-3); break;
-		case'V': stopForce(-4); break;
-		case'B': stopForce(-5); break;
-		case'N': stopForce(-6); break;
-		default:break;
+			switch (pMsg->wParam)
+			{
+			case'Q': stopForce(1); break;
+			case'W': stopForce(2); break;
+			case'E': stopForce(3); break;
+			case'R': stopForce(4); break;
+			case'T': stopForce(5); break;
+			case'Y': stopForce(6); break;
+			case'Z': stopForce(-1); break;
+			case'X': stopForce(-2); break;
+			case'C': stopForce(-3); break;
+			case'V': stopForce(-4); break;
+			case'B': stopForce(-5); break;
+			case'N': stopForce(-6); break;
+			default:break;
+			}
+			return true;
 		}
-		return true;
 	}
+
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
@@ -1030,16 +1038,22 @@ void  CShowRobotDataDlg::updateStaticText(int channel)
 void CShowRobotDataDlg::OnBnClickedRadio1()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	autodecrese = true;
-	SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
+	if (m_isnJS)
+	{
+		autodecrese = true;
+		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
+	}
 }
 
 
 void CShowRobotDataDlg::OnBnClickedRadio2()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	autodecrese = false;
-	KillTimer(2);
+	if (m_isnJS)
+	{
+		autodecrese = false;
+		KillTimer(2);
+	}
 }
 
 void CShowRobotDataDlg::OnBnClickedButton2()   //开启力坐标系
@@ -1092,18 +1106,25 @@ DWORD WINAPI RcvDataJS(LPVOID);
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	if (joystick == NULL)
+	if (!m_isnJS)
 	{
-		joystick = new CJoystick();
-		joystick->m_hWnd = m_hWnd; //首先获得窗口句柄
-		if (!joystick->Initialise())//初始化
+		if (joystick == NULL)
 		{
-			AfxMessageBox(_T("初始化游戏杆失败 - in CDIJoystickDlg::OnInitDialog!"), MB_OK);
-			//OnCancel();
+			joystick = new CJoystick();
+			joystick->m_hWnd = m_hWnd; //首先获得窗口句柄
+			if (!joystick->Initialise())//初始化
+			{
+				AfxMessageBox(_T("初始化游戏杆失败 - in CDIJoystickDlg::OnInitDialog!"), MB_OK);
+				//OnCancel();
+			}
+			joystick->Startlisten();
+			Sleep(100);
+			CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
 		}
-		joystick->Startlisten();
-		Sleep(100);
-		CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
+	}
+	else
+	{
+		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
 	}
 
 }
@@ -1111,6 +1132,11 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 DWORD WINAPI RcvDataJS(LPVOID p)
 {
 	CJoystick* JS = (CJoystick*)p;
+	if (isconnetHelix == false)
+	{
+		AfxMessageBox(_T("请先连接HeLixSCARA程序"), MB_OK);
+		return 0;
+	}
 	while (true)
 	{
 		WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
@@ -1125,3 +1151,17 @@ DWORD WINAPI RcvDataJS(LPVOID p)
 
 	return 0;
 }
+
+void CShowRobotDataDlg::OnBnClickedRadio4()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	m_isnJS = true;   //没有选中JS,使用
+
+}
+
+
+void CShowRobotDataDlg::OnBnClickedRadio3()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	m_isnJS = false ;   //选中JS
+ }
