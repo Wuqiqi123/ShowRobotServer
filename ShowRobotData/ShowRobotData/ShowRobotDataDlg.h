@@ -113,11 +113,12 @@ public:
 
 
 	afx_msg void OnBnClickedButtonChooseForcesource();
-	BOOL m_isnJS;
+//	BOOL m_isnJS;
 	CJoystick* joystick;
 	afx_msg void OnBnClickedRadio4();
 	afx_msg void OnBnClickedRadio3();
 	afx_msg void OnBnClickedRadio5();
+	int m_JS;
 };
 
 

@@ -66,7 +66,7 @@ END_MESSAGE_MAP()
 CShowRobotDataDlg::CShowRobotDataDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CShowRobotDataDlg::IDD, pParent)
 	, m_autodecrese(FALSE)
-	, m_isnJS(FALSE)
+	, m_JS(0)  //默认选择摇杆
 {
 	m_pShowForceDlg = NULL;
 	m_autodecrese = false;
@@ -104,7 +104,9 @@ void CShowRobotDataDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_IPADDRESS1, m_TCPIPaddr);
 	DDX_Radio(pDX, IDC_RADIO1, m_autodecrese);
 	DDX_Control(pDX, IDC_EDIT3, m_NumberEdit);
-	DDX_Radio(pDX, IDC_RADIO3, m_isnJS);
+	//  DDX_Radio(pDX, IDC_RADIO3, m_isnJS);
+	DDX_Radio(pDX, IDC_RADIO3, m_JS);
+	DDV_MinMaxInt(pDX, m_JS, -1, 2);
 }
 
 BEGIN_MESSAGE_MAP(CShowRobotDataDlg, CDialogEx)
@@ -241,7 +243,7 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	//}
 	/////////////////////////////////////////////////
 	SetTimer(1, 150, NULL);  //设置定时器，定时周期为100ms
-	if (!m_autodecrese&&m_isnJS)
+	if (!m_autodecrese && (m_JS==1))   //一开始就选择了键盘
 		SetTimer(2, 200, NULL);  //设置定时器，定时周期为300ms
 
 
@@ -552,15 +554,14 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 	{
 		dlg->update(_T("绑定错误"));
 	}
-
-    listen(listen_sock, 2);     //开始监听,这里使用的是阻塞模式
-
+    listen(listen_sock, 2);     //开始监听,
+	dlg->update(_T("服务器开始监听！"));
 	//打开另一个程序
 	//WinExec("F:\\HelixShowRobot\\HelixSCARA\\HelixSCARA\\bin\\x86\\Release\\HelixSCARA.exe",SW_SHOW);
 	while (1)
 	{	
 		SOCKET *ClientSocket = new SOCKET;
-		if ((*ClientSocket = accept(listen_sock, (struct sockaddr *)&client_addr, &iaddrSize)) == INVALID_SOCKET)//接收套接字
+		if ((*ClientSocket = accept(listen_sock, (struct sockaddr *)&client_addr, &iaddrSize)) == INVALID_SOCKET)//接收套接字，阻塞模式
 		{
 			dlg->update(_T("accept 失败"));
 		}
@@ -704,7 +705,8 @@ DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 	dlg->update(_T("请选择某一种力控制方式："));
 	dlg->update(_T("1、如果选择摇杆，力将由摇杆产生;"));
 	dlg->update(_T("2、如果选择键盘，力将由键盘产生; "));
-	dlg->update(_T("3、如果选择函数，将由机器人客户端本身的力函数产生"));
+	dlg->update(_T("3、如果选择函数，将由机器人客户端本身的力"));
+	dlg->update(_T("函数产生"));
 	while (true)
 	{
 		WaitForSingleObject(g_ThreadSema, INFINITE); //等待信号量资源数>0
@@ -942,7 +944,7 @@ Fx---Fy---Fz---Mx---My---Mz
 BOOL CShowRobotDataDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO:  在此添加专用代码和/或调用基类
-	if (m_isnJS)
+	if (m_JS==1)   //选择键盘
 	{
 		if (pMsg->message == WM_KEYDOWN)
 		{
@@ -1044,21 +1046,22 @@ void  CShowRobotDataDlg::updateStaticText(int channel)
 	}
 }
 
+//////针对键盘的响应函数
 void CShowRobotDataDlg::OnBnClickedRadio1()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	if (m_isnJS)
+	if (m_JS==1)
 	{
 		autodecrese = true;
 		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
 	}
 }
 
-
+///////针对键盘的响应函数
 void CShowRobotDataDlg::OnBnClickedRadio2()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	if (m_isnJS)
+	if (m_JS==1)
 	{
 		autodecrese = false;
 		KillTimer(2);
@@ -1125,7 +1128,7 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 		update(_T("请先连接HelixSCARA显示客户端！"));
 		return;
 	}
-	if (!m_isnJS)
+	if (m_JS==0)
 	{
 		if (joystick == NULL)
 		{
@@ -1154,9 +1157,16 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 			joystick = NULL;
 			isjoystickNULL = true;
 			ReleaseMutex(g_hMutexForJS);
-		}		
-		SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
-		update(_T("使用键盘生成力，成功！"));
+		}	
+		if (m_JS == 1) /////如果是针对键盘的响应函数
+		{
+			SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
+			update(_T("使用键盘生成力，成功！"));
+		}
+		else   //m_JS为2的情况，也就是对应着函数生成力的情况
+		{
+
+		}
 	}
 
 }
@@ -1188,16 +1198,23 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 void CShowRobotDataDlg::OnBnClickedRadio4()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	m_isnJS = true;   //没有选中JS,使用
-	update(_T("请选择一个力生成方式：\n") );
+	UpdateData();  //将Radio控件上的显示同步到变量上
+	CString   temp;
+	temp.Format(_T("%d"), m_JS);
+	update(_T("选择的力生成方式为") + temp + _T("：键盘"));
+	update(_T("请点击“发送力传感器来源”以确定！") );
 }
 
 ////////选择摇杆的生成方式
 void CShowRobotDataDlg::OnBnClickedRadio3()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	m_isnJS = false ;   //选中JS
-	update(_T("请选择一个力生成方式：\n") );
+	//m_JS = 0;   //选中JS
+	UpdateData();  //将Radio控件上的显示同步到变量上
+	CString   temp;
+	temp.Format(_T("%d"), m_JS);
+	update(_T("选择的力生成方式为") + temp + _T("：摇杆"));
+	update(_T("请点击“发送力传感器来源”以确定！"));
  }
 
 
@@ -1206,5 +1223,9 @@ void CShowRobotDataDlg::OnBnClickedRadio3()
 void CShowRobotDataDlg::OnBnClickedRadio5()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	update(_T("请选择一个力生成方式：\n"));
+	UpdateData();  //将Radio控件上的显示同步到变量上
+	CString   temp;
+	temp.Format(_T("%d"), m_JS);
+	update(_T("选择的力生成方式为") + temp + _T("：机器人自身函数"));
+	update(_T("请点击“发送力传感器来源”以确定！"));
 }
