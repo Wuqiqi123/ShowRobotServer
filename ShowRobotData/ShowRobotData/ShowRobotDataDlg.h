@@ -13,7 +13,7 @@
 #include "ShowForceDlg.h"
 #include "NumberEdit.h"
 #include "Joystick.h"
-
+#include "Resource.h"
 struct RobotData
 {
 	double JointsNow[4];

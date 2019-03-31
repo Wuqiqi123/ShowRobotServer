@@ -1,7 +1,6 @@
 
 // ShowRobotDataDlg.cpp : 实现文件
 //
-
 #include "stdafx.h"
 #include "ShowRobotData.h"
 #include "ShowRobotDataDlg.h"
@@ -526,6 +525,7 @@ void LeftMoveArrayXWithQueue(double* ptr, size_t length, unsigned int& data, int
 std::queue<RobotData> g_QueueData;  //全局队列
 HANDLE g_hMutex;  //互斥量句柄
 HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
+
 UINT server_thd(LPVOID p)//线程要调用的函数
 {
 	HWND hWnd = (HWND)p;
@@ -1118,8 +1118,8 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 				//OnCancel();
 			}
 			joystick->Startlisten();
-			Sleep(100);
-			CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
+			//Sleep(100);
+			//CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
 		}
 	}
 	else
@@ -1129,28 +1129,28 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 
 }
 
-DWORD WINAPI RcvDataJS(LPVOID p)
-{
-	CJoystick* JS = (CJoystick*)p;
-	if (isconnetHelix == false)
-	{
-		AfxMessageBox(_T("请先连接HeLixSCARA程序"), MB_OK);
-		return 0;
-	}
-	while (true)
-	{
-		WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
-		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x;
-		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y;
-		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z;
-		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R;
-		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
-		ReleaseMutex(g_hMutexForJS);
-		Sleep(5);
-	}
-
-	return 0;
-}
+//DWORD WINAPI RcvDataJS(LPVOID p)
+//{
+//	CJoystick* JS = (CJoystick*)p;
+//	if (isconnetHelix == false)
+//	{
+//		AfxMessageBox(_T("请先连接HeLixSCARA程序"), MB_OK);
+//		return 0;
+//	}
+//	while (true)
+//	{
+//		WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
+//		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x;
+//		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y;
+//		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z;
+//		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R;
+//		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+//		ReleaseMutex(g_hMutexForJS);
+//		Sleep(5);
+//	}
+//
+//	return 0;
+//}
 
 void CShowRobotDataDlg::OnBnClickedRadio4()
 {

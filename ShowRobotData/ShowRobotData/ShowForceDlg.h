@@ -3,6 +3,7 @@
 #include <gl/gl.h>
 #include <gl/glu.h>
 #include <gl/glut.h>
+#include "Resource.h"
 // CShowForceDlg ¶Ô»°¿ò
 struct My3DPoint{
 	GLdouble X;
