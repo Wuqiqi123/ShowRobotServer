@@ -67,7 +67,7 @@ bool CJoystick::Initialise(void)
               return false;
          }
      }
-	 //设置协作等级—— 前台模式 | 独占模式
+	 //设置协作等级—— 后台模式 | 独占模式
 	 hr = m_lpDIDevice->SetCooperativeLevel(m_hWnd, DISCL_BACKGROUND | DISCL_EXCLUSIVE);
     
      if FAILED(hr)
