@@ -22,7 +22,7 @@ CString IP;  //定义为全局变量
 SOCKET listen_sock;
 //SOCKET sockforreality;
 //SOCKET sockforHelix;
-
+HANDLE g_Helix_hMutex;  //互斥量句柄
 DWORD WINAPI ServerThreadForReality(LPVOID lp);
 DWORD WINAPI ServerThreadForHelix(LPVOID lp);
 
@@ -683,7 +683,11 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 			if (MyRobotData.JointsNow[0] <= 1000 && MyRobotData.JointsNow[0] >= -1000 && MyRobotData.JointsVelNow[0] <= 100 && MyRobotData.JointsVelNow[0] >= -100)
 			{
 				g_QueueData.push(MyRobotData);
+
+				WaitForSingleObject(g_Helix_hMutex, INFINITE);  //保证线程在从接受缓存中赋值给结构体的时候，ServerThreadForHelix没有取值
 				memcpy(&HelixRobotData, &MyRobotData, sizeof(MyRobotData));
+				ReleaseMutex(g_Helix_hMutex);
+
 				ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 			}
 			ReleaseMutex(g_hMutex);
@@ -698,10 +702,12 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 }
 
 bool isconnetHelix = false;
+
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
 	g_ThreadSema = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
+	g_Helix_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
 	isconnetHelix = true;
 	CShowRobotDataDlg * dlg = (CShowRobotDataDlg *)AfxGetApp()->GetMainWnd();
 	dlg->update(_T("请选择某一种力控制方式："));
@@ -715,7 +721,11 @@ DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 	//	memset(&HelixRobotData, 0, sizeof(HelixRobotData));
 		char buff[sizeof(HelixRobotData)];
 		memset(buff, 0, sizeof(HelixRobotData));
+
+		WaitForSingleObject(g_Helix_hMutex, INFINITE);    //使用互斥量来保护在拷贝数据的时候，ServerThreadForReality线程没有正在到赋值
 		memcpy(buff, &HelixRobotData, sizeof(HelixRobotData));
+		ReleaseMutex(g_Helix_hMutex);
+
 		send(*ClientSocketHelix, buff, sizeof(buff), 0);
 		//Sleep(30);
 	}
@@ -1120,11 +1130,11 @@ bool isjoystickNULL = true;
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	if (!isconnetRealRobot)
-	{
-		update(_T("请先连接机器人客户端！"));
-		return;
-	}
+	//if (!isconnetRealRobot)
+	//{
+	//	update(_T("请先连接机器人客户端！"));
+	//	return;
+	//}
 	if (!isconnetHelix)
 	{
 		update(_T("请先连接HelixSCARA显示客户端！"));
