@@ -6,6 +6,7 @@
 //此操作可以避免_DirectInput8Create@20错误
 #pragma comment (lib,"dxguid.lib")
 
+#define JSBIASNUM 5
 
 DWORD WINAPI GetJSDataThread(LPVOID);
 CJoystick::CJoystick(void)
@@ -19,6 +20,11 @@ CJoystick::CJoystick(void)
 	innerJSForceData.y = 0;
 	innerJSForceData.z = 0;
 	innerJSForceData.R = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		bias[i] = 0;
+		offset[i] = 0.5;
+	}
 }
 
 CJoystick::~CJoystick(void)
@@ -94,8 +100,32 @@ bool CJoystick::Initialise(void)
          OutputDebugString(LPCWSTR("枚举对象失败 - in CDIJoystick::Initialise/n"));
          return false;
 	 }
-
-
+	 Sleep(200);
+	 ////////////////////////////////////////////////////
+	 /*下面开始计算初始的偏置值*/
+	 double biastmp[4] = {0,0,0,0};
+	 for (int i = 0; i < JSBIASNUM+1;i++)
+	 {
+		 if (FAILED(PollDevice())) //轮循
+		 {
+			 AfxMessageBox(_T("读取设备状态错误"), MB_OK);
+			 return 0;
+		 }
+		 if (i > 0)
+		 {
+			 biastmp[0] += m_diJs.lX;
+			 biastmp[1] += m_diJs.lY;
+			 biastmp[2] += m_diJs.lZ;
+			 biastmp[3] += m_diJs.lRz;
+		 }
+		 Sleep(10);
+	 }
+	 for (int i = 0; i < 4; i++)
+	 {
+		 bias[i] = biastmp[i] / (JSBIASNUM);
+	 }
+	 
+		 
 	return 1;
 }
 
@@ -123,21 +153,21 @@ BOOL CALLBACK CJoystick::EnumObjectsCallback( const DIDEVICEOBJECTINSTANCE* pdid
          hr = js->m_lpDIDevice->SetProperty( DIPROP_RANGE, &diprg.diph);
         if( FAILED(hr))
          {
-         OutputDebugString(LPCWSTR("设置轴范围失败 - in CDIJoystick::EnumObjectsCallback/n"));
-         return DIENUM_STOP;
+			OutputDebugString(LPCWSTR("设置轴范围失败 - in CDIJoystick::EnumObjectsCallback/n"));
+			return DIENUM_STOP;
          }
 //设置死区属性，如果你使用的是电平式的游戏手柄，需要注释掉一下部分
          DIPROPDWORD dipdw;                        //死区结构
          dipdw.diph.dwSize       = sizeof( dipdw );
          dipdw.diph.dwHeaderSize = sizeof( dipdw.diph );
-        diprg.diph.dwObj        = pdidoi->dwType; // 枚举的轴
+         diprg.diph.dwObj        = pdidoi->dwType; // 枚举的轴
          dipdw.diph.dwHow        = DIPH_DEVICE;
          dipdw.dwData            = 1000;           //10%的死区
          hr =  js->m_lpDIDevice->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
         if( FAILED(hr))
          {
-         OutputDebugString(LPCWSTR("设置死区失败 - in CDIJoystick::EnumObjectsCallback/n"));
-         return DIENUM_STOP;
+			 OutputDebugString(LPCWSTR("设置死区失败 - in CDIJoystick::EnumObjectsCallback/n"));
+			 return DIENUM_STOP;
          }
     }
     return DIENUM_CONTINUE;
@@ -193,6 +223,18 @@ HANDLE g_hMutexForJS;  //互斥量句柄
 extern RobotData HelixRobotData;
 extern HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
 extern bool isjoystickNULL;
+
+/*
+初始原位  32255  34328   33288   74
+向前位置  32511  4096    33288   155
+向后位置  37189  65015   33288   -24
+向左位置  5876   28927   33288   -8
+向右位置  65535  32255   33288   204
+右旋      33028  32768   33288   1024
+左旋      37969  37969   33288   -1000
+32768
+*/
+ 
 DWORD WINAPI GetJSDataThread(LPVOID p)
 {
 	g_hMutexForJS = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
@@ -207,11 +249,27 @@ DWORD WINAPI GetJSDataThread(LPVOID p)
 			AfxMessageBox(_T("读取设备状态错误"), MB_OK);
 			return 0;
 		}
-	//	WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
-		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x = (JS->m_diJs.lX - 32768) * 1000 / 32768;
-		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y = (JS->m_diJs.lY - 32768) * 1000 / 32768;
-		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z = (JS->m_diJs.lZ - 32768) * 1000 / 32768;
-		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R = (JS->m_diJs.lRz);
+
+		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y = (JS->m_diJs.lX - JS->bias[0]) * 20 / JS->bias[0];  //转化到-20~20
+		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x = (JS->m_diJs.lY - JS->bias[1]) * 20 / JS->bias[1]; //转化到-20~20
+		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z = -(JS->m_diJs.lZ - JS->bias[2]) * 20 / JS->bias[2]; //转化到-20~20
+		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R = -(JS->m_diJs.lRz - JS->bias[3]) * 10 / JS->bias[3]; //转化到-10~10
+		if (abs(HelixRobotData.Origin6axisForce[0])<JS->offset[0])
+		{
+			HelixRobotData.Origin6axisForce[0] = 0;
+		}
+		if (abs(HelixRobotData.Origin6axisForce[1])<JS->offset[1])
+		{
+			HelixRobotData.Origin6axisForce[1] = 0;
+		}
+		if (abs(HelixRobotData.Origin6axisForce[2])<JS->offset[2])
+		{
+			HelixRobotData.Origin6axisForce[2] = 0;
+		}
+		if (abs(HelixRobotData.Origin6axisForce[3])<JS->offset[3])
+		{
+			HelixRobotData.Origin6axisForce[3] = 0;
+		}
 		ReleaseMutex(g_hMutexForJS);
 		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 		Sleep(10);
@@ -219,3 +277,4 @@ DWORD WINAPI GetJSDataThread(LPVOID p)
 
 	return 0;
 }
+

@@ -33,5 +33,8 @@ public:
 	 HANDLE hThread;
 	 void Startlisten(void);
 	 JSForceData innerJSForceData;
+	 double bias[4];  //上电初始化之后取值的偏置值，希望将偏置值减掉，保证每次在上电的时候各个力都是0
+	 double offset[4]; //由于在零的时候往往会有一些波动，所以在正负这个值之内都为0；
+
 };
 
