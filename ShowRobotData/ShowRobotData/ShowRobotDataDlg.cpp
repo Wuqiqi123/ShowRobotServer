@@ -639,9 +639,11 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 
 bool isconnetRealRobot = false;
 RobotData HelixRobotData;
+SOCKET *ClientSocketRea = NULL;
+
 DWORD WINAPI ServerThreadForReality(LPVOID lp)
 {
-	SOCKET *ClientSocketRea = (SOCKET*)lp;
+	ClientSocketRea = (SOCKET*)lp;
 	////////////接收数据
 	g_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
 	isconnetRealRobot = true;
@@ -652,7 +654,7 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 	memset(recbuf, 0, sizeof(MyRobotData));
 	while (1)
 	{
-		if ((res = recv(*ClientSocketRea, recbuf, sizeof(recbuf), 0)) == -1)    //这个rev函数也是阻塞模式
+		if ((res = recv(*ClientSocketRea, recbuf, sizeof(recbuf), 0)) == -1)    //这个rev函数是阻塞模式
 		{
 			dlg->update(_T("失去客户端的连接"));
 			break;
@@ -1118,11 +1120,11 @@ bool isjoystickNULL = true;
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	//if (!isconnetRealRobot)
-	//{
-	//	update(_T("请先连接机器人客户端！"));
-	//	return;
-	//}
+	if (!isconnetRealRobot)
+	{
+		update(_T("请先连接机器人客户端！"));
+		return;
+	}
 	if (!isconnetHelix)
 	{
 		update(_T("请先连接HelixSCARA显示客户端！"));
@@ -1130,6 +1132,11 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 	}
 	if (m_JS==0)
 	{
+		if (ClientSocketRea != NULL)
+		{
+			char buff[128] = "服务器请求机器人摇杆连接！";
+			send(*ClientSocketRea, buff, strlen(buff), 0);
+		}
 		if (joystick == NULL)
 		{
 			joystick = new CJoystick();
@@ -1145,6 +1152,7 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 			update(_T("使用摇杆生成力，成功！"));
 			//Sleep(100);
 			//CreateThread(NULL, 0, RcvDataJS, joystick, 0, NULL);
+
 		}
 	}
 	else
@@ -1160,12 +1168,21 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 		}	
 		if (m_JS == 1) /////如果是针对键盘的响应函数
 		{
+			if (ClientSocketRea != NULL)
+			{
+				char buff[128] = "服务器请求机器人键盘连接！";
+				send(*ClientSocketRea, buff, strlen(buff), 0);
+			}
 			SetTimer(2, TIMEINTERVAL, NULL);  //设置定时器，定时周期为100ms
 			update(_T("使用键盘生成力，成功！"));
 		}
 		else   //m_JS为2的情况，也就是对应着函数生成力的情况
 		{
-
+			if (ClientSocketRea != NULL)
+			{
+				char buff[128] = "服务器请求机器人函数连接！";
+				send(*ClientSocketRea, buff, strlen(buff), 0);
+			}
 		}
 	}
 
