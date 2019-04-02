@@ -28,6 +28,13 @@ struct RobotData
 	double CartesianVelNext[4];
 };
 
+struct MiniSendData
+{
+	double JointsNow[4];
+	double JointsVelNow[4];
+	double Origin6axisForce[6];
+};
+
 // CShowRobotDataDlg ¶Ô»°¿ò
 class CShowRobotDataDlg : public CDialogEx
 {

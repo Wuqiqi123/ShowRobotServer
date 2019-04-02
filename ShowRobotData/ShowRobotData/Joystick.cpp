@@ -220,10 +220,11 @@ void CJoystick::Startlisten()
 }
 
 HANDLE g_hMutexForJS;  //互斥量句柄
-extern RobotData HelixRobotData;
-extern HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
+//extern RobotData HelixRobotData;
+//xtern HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
+extern HANDLE g_activate_send_signal;  //创建内核对象，用来初始化信号量
 extern bool isjoystickNULL;
-
+extern MiniSendData SendRobotData;
 /*
 初始原位  32255  34328   33288   74
 向前位置  32511  4096    33288   155
@@ -250,29 +251,29 @@ DWORD WINAPI GetJSDataThread(LPVOID p)
 			return 0;
 		}
 
-		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y = (JS->m_diJs.lX - JS->bias[0]) * 20 / JS->bias[0];  //转化到-20~20
-		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x = (JS->m_diJs.lY - JS->bias[1]) * 20 / JS->bias[1]; //转化到-20~20
-		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z = -(JS->m_diJs.lZ - JS->bias[2]) * 20 / JS->bias[2]; //转化到-20~20
-		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R = -(JS->m_diJs.lRz - JS->bias[3]) * 10 / JS->bias[3]; //转化到-10~10
-		if (abs(HelixRobotData.Origin6axisForce[0])<JS->offset[0])
+		SendRobotData.Origin6axisForce[1] = JS->innerJSForceData.y = (JS->m_diJs.lX - JS->bias[0]) * 5 / JS->bias[0];  //转化到-20~20
+		SendRobotData.Origin6axisForce[0] = JS->innerJSForceData.x = (JS->m_diJs.lY - JS->bias[1]) * 5 / JS->bias[1]; //转化到-20~20
+		SendRobotData.Origin6axisForce[2] = JS->innerJSForceData.z = -(JS->m_diJs.lZ - JS->bias[2]) * 5 / JS->bias[2]; //转化到-20~20
+		SendRobotData.Origin6axisForce[5] = JS->innerJSForceData.R = -(JS->m_diJs.lRz - JS->bias[3]) * 1 / JS->bias[3]; //转化到-10~10
+		if (abs(SendRobotData.Origin6axisForce[0])<JS->offset[0])
 		{
-			HelixRobotData.Origin6axisForce[0] = 0;
+			SendRobotData.Origin6axisForce[0] = 0;
 		}
-		if (abs(HelixRobotData.Origin6axisForce[1])<JS->offset[1])
+		if (abs(SendRobotData.Origin6axisForce[1])<JS->offset[1])
 		{
-			HelixRobotData.Origin6axisForce[1] = 0;
+			SendRobotData.Origin6axisForce[1] = 0;
 		}
-		if (abs(HelixRobotData.Origin6axisForce[2])<JS->offset[2])
+		if (abs(SendRobotData.Origin6axisForce[2])<JS->offset[2])
 		{
-			HelixRobotData.Origin6axisForce[2] = 0;
+			SendRobotData.Origin6axisForce[2] = 0;
 		}
-		if (abs(HelixRobotData.Origin6axisForce[3])<JS->offset[3])
+		if (abs(SendRobotData.Origin6axisForce[3])<JS->offset[3])
 		{
-			HelixRobotData.Origin6axisForce[3] = 0;
+			SendRobotData.Origin6axisForce[3] = 0;
 		}
 		ReleaseMutex(g_hMutexForJS);
-		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
-		Sleep(10);
+		ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
+		Sleep(5);
 	}
 
 	return 0;

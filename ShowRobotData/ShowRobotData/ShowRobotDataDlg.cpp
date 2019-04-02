@@ -25,7 +25,7 @@ SOCKET listen_sock;
 HANDLE g_Helix_hMutex;  //互斥量句柄
 DWORD WINAPI ServerThreadForReality(LPVOID lp);
 DWORD WINAPI ServerThreadForHelix(LPVOID lp);
-
+DWORD WINAPI ThreadSendDatatoReality(LPVOID lp);
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -186,7 +186,7 @@ BOOL CShowRobotDataDlg::OnInitDialog()
 	pAxis->SetAutomatic(true);
 	pAxis = m_ChartCtrl4.CreateStandardAxis(CChartCtrl::LeftAxis);
 	//pAxis->SetAutomatic(true);
-	pAxis->SetMinMax(-360, 360);
+	pAxis->SetMinMax(-120, 120);
 	///////创建标题
 	TChartString str1;
 
@@ -379,17 +379,17 @@ void CShowRobotDataDlg::OnBnClickedStartserver()
 	}
 	TChartStringStream strs1, strs2, strs3;
 	strs1 << _T("角度值");
-		m_pLineSerie1[0]->SetName(strs1.str());//SetName的作用将在后面讲到
+		m_pLineSerie1[0]->SetName(strs1.str());//SetName的作用将在后面
 		m_pLineSerie2[0]->SetName(strs1.str());
 		m_pLineSerie3[0]->SetName(strs1.str());
 		m_pLineSerie4[0]->SetName(strs1.str());
 	strs2 << _T("速度值");
-		m_pLineSerie1[1]->SetName(strs2.str());//SetName的作用将在后面讲到
+		m_pLineSerie1[1]->SetName(strs2.str());//SetName的作用将在后面
 		m_pLineSerie2[1]->SetName(strs2.str());
 		m_pLineSerie3[1]->SetName(strs2.str());
 		m_pLineSerie4[1]->SetName(strs2.str());
 	strs3 << _T("力矩");
-		m_pLineSerie1[2]->SetName(strs3.str());//SetName的作用将在后面讲到
+		m_pLineSerie1[2]->SetName(strs3.str());//SetName的作用将在后面
 		m_pLineSerie2[2]->SetName(strs3.str());
 		m_pLineSerie3[2]->SetName(strs3.str());
 		m_pLineSerie4[2]->SetName(strs3.str());
@@ -528,7 +528,9 @@ void LeftMoveArrayXWithQueue(double* ptr, size_t length, unsigned int& data, int
 
 std::queue<RobotData> g_QueueData;  //全局队列
 HANDLE g_hMutex;  //互斥量句柄
-HANDLE g_ThreadSema;  //创建内核对象，用来初始化信号量
+HANDLE g_activeate_Helix_siganl;  //创建内核对象，用来初始化信号量,用于激活程序给Helix显示机器人数据
+
+HANDLE g_activate_send_signal;  //用于激活力发送给客户端的函数
 
 UINT server_thd(LPVOID p)//线程要调用的函数
 {
@@ -582,7 +584,8 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 			}
 			else
 			{
-				CreateThread(NULL, 0, ServerThreadForReality, ClientSocket, 0, NULL);
+				CreateThread(NULL, 0, ServerThreadForReality, ClientSocket, 0, NULL);    //接受机器人发过来的数据
+				CreateThread(NULL, 0, ThreadSendDatatoReality, ClientSocket, 0, NULL);   //给机器人发送力信息
 			}
 
 		}
@@ -639,7 +642,9 @@ UINT server_thd(LPVOID p)//线程要调用的函数
 
 bool isconnetRealRobot = false;
 RobotData HelixRobotData;
+MiniSendData SendRobotData;
 SOCKET *ClientSocketRea = NULL;
+
 
 DWORD WINAPI ServerThreadForReality(LPVOID lp)
 {
@@ -688,7 +693,7 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 				memcpy(&HelixRobotData, &MyRobotData, sizeof(MyRobotData));
 				ReleaseMutex(g_Helix_hMutex);
 
-				ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+				ReleaseSemaphore(g_activeate_Helix_siganl, 1, NULL);  //信号量资源数加一
 			}
 			ReleaseMutex(g_hMutex);
 			//****使用队列的方式来完成任务结束
@@ -701,12 +706,28 @@ DWORD WINAPI ServerThreadForReality(LPVOID lp)
 	return 0;
 }
 
+////////将力的信息发送给客户端，ServerThreadForReality和ThreadSendDatatoReality两个线程都含有机器人端的socket:ClientSocketRea，网上说是全双工的，没测试
+DWORD WINAPI ThreadSendDatatoReality(LPVOID lp)
+{
+	ClientSocketRea = (SOCKET*)lp;
+	g_activate_send_signal = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
+	char buff[sizeof(SendRobotData)];
+	while (true)
+	{
+		WaitForSingleObject(g_activate_send_signal, INFINITE); //等待信号量资源数>0
+		memset(buff, 0, sizeof(SendRobotData));
+		memcpy(buff, &SendRobotData, sizeof(SendRobotData));
+		send(*ClientSocketRea, buff, sizeof(buff), 0);
+	}
+	return 0;
+}
+
 bool isconnetHelix = false;
 
 DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 {
 	SOCKET *ClientSocketHelix = (SOCKET*)lp;
-	g_ThreadSema = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
+	g_activeate_Helix_siganl = CreateSemaphore(NULL, 0, 1, NULL); //创建匿名信号量，初始资源为零，最大并发数为1
 	g_Helix_hMutex = CreateMutex(NULL, FALSE, NULL);   //创建无名的互斥量，这个互斥量不被任何线程占有
 	isconnetHelix = true;
 	CShowRobotDataDlg * dlg = (CShowRobotDataDlg *)AfxGetApp()->GetMainWnd();
@@ -717,7 +738,7 @@ DWORD WINAPI ServerThreadForHelix(LPVOID lp)
 	dlg->update(_T("函数产生"));
 	while (true)
 	{
-		WaitForSingleObject(g_ThreadSema, INFINITE); //等待信号量资源数>0
+		WaitForSingleObject(g_activeate_Helix_siganl, INFINITE); //等待信号量资源数>0
 	//	memset(&HelixRobotData, 0, sizeof(HelixRobotData));
 		char buff[sizeof(HelixRobotData)];
 		memset(buff, 0, sizeof(HelixRobotData));
@@ -856,9 +877,9 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 		LeftMoveArrayWithQueue(m_HightSpeedChartArray3[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
 		LeftMoveArrayWithQueue(m_HightSpeedChartArray3[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
 
-		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[0], m_c_arrayLength, DealQueueData, DataSize, 31);  //角度值
-		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[1], m_c_arrayLength, DealQueueData, DataSize, 32);  //速度值
-		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[2], m_c_arrayLength, DealQueueData, DataSize, 33);  //力矩
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[0], m_c_arrayLength, DealQueueData, DataSize, 41);  //角度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[1], m_c_arrayLength, DealQueueData, DataSize, 42);  //速度值
+		LeftMoveArrayWithQueue(m_HightSpeedChartArray4[2], m_c_arrayLength, DealQueueData, DataSize, 43);  //力矩
 
 		LeftMoveArrayXWithQueue(m_X, m_c_arrayLength, m_count, DataSize);
 
@@ -889,8 +910,8 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 				if (ForceSense[i] > RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] - RealInteral;
-					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
-					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+					SendRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
 
 					if (m_pShowForceDlg!=NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
@@ -898,8 +919,8 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 				else if (ForceSense[i] < -RealInteral)
 				{
 					ForceSense[i] = ForceSense[i] + RealInteral;
-					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
-					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+					SendRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
 
 					if (m_pShowForceDlg != NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
@@ -907,8 +928,8 @@ void CShowRobotDataDlg::OnTimer(UINT_PTR nIDEvent)
 				else
 				{
 					ForceSense[i] = 0;
-					HelixRobotData.Origin6axisForce[i] = ForceSense[i];
-					ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+					SendRobotData.Origin6axisForce[i] = ForceSense[i];
+					ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
 
 					if (m_pShowForceDlg != NULL)
 						m_pShowForceDlg->ReDrawOpenGL(ForceSense);
@@ -1019,8 +1040,8 @@ void CShowRobotDataDlg::addForce(int i)
 	if (direction > 0)
 	{
 		ForceSense[channel]++;
-		HelixRobotData.Origin6axisForce[channel] = ForceSense[channel];
-		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+		SendRobotData.Origin6axisForce[channel] = ForceSense[channel];
+		ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
 
 		if (m_pShowForceDlg != NULL)
 			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
@@ -1028,8 +1049,8 @@ void CShowRobotDataDlg::addForce(int i)
 	else
 	{
 		ForceSense[channel]--;
-		HelixRobotData.Origin6axisForce[channel] = ForceSense[channel];
-		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
+		SendRobotData.Origin6axisForce[channel] = ForceSense[channel];
+		ReleaseSemaphore(g_activate_send_signal, 1, NULL);  //信号量资源数加一
 		if (m_pShowForceDlg != NULL)
 			m_pShowForceDlg->ReDrawOpenGL(ForceSense);
 	}
@@ -1130,11 +1151,11 @@ bool isjoystickNULL = true;
 void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	//if (!isconnetRealRobot)
-	//{
-	//	update(_T("请先连接机器人客户端！"));
-	//	return;
-	//}
+	if (!isconnetRealRobot)
+	{
+		update(_T("请先连接机器人客户端！"));
+		return;
+	}
 	if (!isconnetHelix)
 	{
 		update(_T("请先连接HelixSCARA显示客户端！"));
@@ -1209,10 +1230,10 @@ void CShowRobotDataDlg::OnBnClickedButtonChooseForcesource()
 //	while (true)
 //	{
 //		WaitForSingleObject(g_hMutexForJS, INFINITE);    //使用互斥量来保护g_QueueData队列读取和插入分开
-//		HelixRobotData.Origin6axisForce[0] = JS->innerJSForceData.x;
-//		HelixRobotData.Origin6axisForce[1] = JS->innerJSForceData.y;
-//		HelixRobotData.Origin6axisForce[2] = JS->innerJSForceData.z;
-//		HelixRobotData.Origin6axisForce[5] = JS->innerJSForceData.R;
+//		SendRobotData.Origin6axisForce[0] = JS->innerJSForceData.x;
+//		SendRobotData.Origin6axisForce[1] = JS->innerJSForceData.y;
+//		SendRobotData.Origin6axisForce[2] = JS->innerJSForceData.z;
+//		SendRobotData.Origin6axisForce[5] = JS->innerJSForceData.R;
 //		ReleaseSemaphore(g_ThreadSema, 1, NULL);  //信号量资源数加一
 //		ReleaseMutex(g_hMutexForJS);
 //		Sleep(5);
